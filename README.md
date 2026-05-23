@@ -166,7 +166,7 @@ npm run dev
 
 ---
 
-## Environment variables
+## Environment variables (But could be different depending on what Stackframes we decide to use)
 
 **`backend/.env`**
 
