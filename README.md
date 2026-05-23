@@ -191,8 +191,8 @@ npm run dev
 
 This project is intended to outlast its original authors. If you're a new developer picking this up:
 
-1. Read `docs/planning.md` first — it explains the thinking behind how the system was built, not just what it does.
-2. Check `docs/decisions/` for records of why key architectural choices were made.
+1. Read `planning.md` first — it explains the thinking behind how the system was built, not just what it does.
+2. Check `decisions` for records of why key architectural choices were made.
 3. Each feature area has its own README in its folder explaining the specific logic.
 4. Write tests. This app will be used by real students at real events — a bug in the scoring screen during a final is a bad time.
 5. When in doubt, ask in the project's discussion board before making big changes.
