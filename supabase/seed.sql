@@ -3,8 +3,12 @@
 --
 -- Local development seed. `supabase db reset` runs this after applying every
 -- migration, giving every service concrete data to hit — one active season,
--- six teams with a few players each, and one published Monday-night event
--- with four slots and six fixtures across two sports.
+-- six teams, and one published Monday-night event with four slots and six
+-- fixtures across two sports.
+--
+-- Player rows are intentionally not seeded: player management is deferred to
+-- Sprint 4 (optional scorer attribution only). The `players` table stays in
+-- the schema as a dormant hook.
 --
 -- Static UUIDs are used deliberately so docs and curl examples can reference
 -- them without a lookup step. Do not reuse this file in production.
@@ -31,28 +35,6 @@ insert into public.teams (id, season_id, name) values
   ('a5555555-5555-5555-5555-555555555555', '11111111-1111-1111-1111-111111111111', 'Purples'),
   ('a6666666-6666-6666-6666-666666666666', '11111111-1111-1111-1111-111111111111', 'Oranges')
 on conflict (id) do nothing;
-
--- Players (three per team for the demo) ---------------------------------------
-insert into public.players (team_id, name) values
-  ('a1111111-1111-1111-1111-111111111111', 'Alex Reid'),
-  ('a1111111-1111-1111-1111-111111111111', 'Sam Riley'),
-  ('a1111111-1111-1111-1111-111111111111', 'Jordan Ray'),
-  ('a2222222-2222-2222-2222-222222222222', 'Blake Owens'),
-  ('a2222222-2222-2222-2222-222222222222', 'Cameron Ng'),
-  ('a2222222-2222-2222-2222-222222222222', 'Devon Ellis'),
-  ('a3333333-3333-3333-3333-333333333333', 'Emerson Kaur'),
-  ('a3333333-3333-3333-3333-333333333333', 'Frankie Tsai'),
-  ('a3333333-3333-3333-3333-333333333333', 'Gray Osei'),
-  ('a4444444-4444-4444-4444-444444444444', 'Harper Silva'),
-  ('a4444444-4444-4444-4444-444444444444', 'Indigo Park'),
-  ('a4444444-4444-4444-4444-444444444444', 'Jules Abara'),
-  ('a5555555-5555-5555-5555-555555555555', 'Kai Mensah'),
-  ('a5555555-5555-5555-5555-555555555555', 'Lior Devi'),
-  ('a5555555-5555-5555-5555-555555555555', 'Morgan Nash'),
-  ('a6666666-6666-6666-6666-666666666666', 'Noor Diaz'),
-  ('a6666666-6666-6666-6666-666666666666', 'Onyx Bramble'),
-  ('a6666666-6666-6666-6666-666666666666', 'Parker Ito')
-on conflict do nothing;
 
 -- Event (one published Monday night) ------------------------------------------
 insert into public.events (id, season_id, event_date, is_published, published_at)

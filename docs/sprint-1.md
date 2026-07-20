@@ -6,8 +6,10 @@ section maps to one commit on this branch.
 ## Goal
 
 A deployed backend skeleton where an organiser can authenticate, create a
-season, and add teams/players. A public fixtures endpoint serves the draw of
-any published event as HTML, plain text, or JSON.
+season, and add teams. A public fixtures endpoint serves the draw of any
+published event as HTML, plain text, or JSON.
+
+> Player management deferred to Sprint 4 (optional scorer attribution only).
 
 ## What shipped
 
@@ -17,7 +19,7 @@ any published event as HTML, plain text, or JSON.
 | S1.2 | `feat(db): add core schema and seed data`                       | Verified migration + `supabase/seed.sql` with a demo season               |
 | S1.3 | `feat(auth): add organiser authentication guard`                | Real `_shared/auth.ts` — verifies Supabase Auth JWT                       |
 | S1.4 | `feat(seasons): add season management service`                  | `functions/seasons` (create / list / update / archive / set-active)       |
-| S1.5 | `feat(teams): add team and player management service`           | `functions/teams` (add / rename / remove / bulk-add / add players)        |
+| S1.5 | `feat(teams): add team management service`                      | `functions/teams` (add / rename / remove / bulk-add)                      |
 
 ## Running everything
 
@@ -87,7 +89,7 @@ curl "$URL/functions/v1/fixtures-public?event=<event-id>&format=json"
 All routes require `Authorization: Bearer $TOKEN`. Documented in more detail
 in Task 4's section below.
 
-### `teams` — organiser team + player management
+### `teams` — organiser team management
 
 All routes require `Authorization: Bearer $TOKEN`. Documented in more detail
 in Task 5's section below.
@@ -107,8 +109,9 @@ in Task 5's section below.
 ### Task 2 — Schema + seed
 
 - `supabase db reset` applies `0001_core_schema.sql` and `seed.sql`.
-- Seed data: one demo season, six teams, a handful of players per team, one
-  published event with slots + fixtures spanning multiple sports.
+- Seed data: one demo season, six teams, one published event with slots +
+  fixtures spanning multiple sports. No player rows — player management is
+  deferred to Sprint 4.
 
 ### Task 3 — Auth guard
 
@@ -129,7 +132,7 @@ Routes (all authenticated):
 | POST   | `/seasons/:id/archive`          | Archive (soft delete)             |
 | POST   | `/seasons/:id/activate`         | Mark as the active season         |
 
-### Task 5 — Teams + players
+### Task 5 — Teams
 
 Routes (all authenticated):
 
@@ -140,7 +143,6 @@ Routes (all authenticated):
 | PATCH  | `/teams/:id`                      | Rename a team                       |
 | DELETE | `/teams/:id`                      | Remove a team                       |
 | POST   | `/teams/bulk`                     | Bulk-add teams from a pasted list   |
-| POST   | `/teams/:id/players`              | Add a player to a team              |
 
 ## Out of scope (Sprint 2 or later)
 

@@ -2,9 +2,9 @@
 
 Supabase-native backend for a weekly college sports competition. Multiple
 sports run across four evening slots each Monday; this repo hosts the
-API/services that manage seasons, teams, players, fixtures, results, and
-(later) live scoring. The frontend team picks their stack separately —
-everything here is a self-contained API/service they can consume.
+API/services that manage seasons, teams, fixtures, results, and (later)
+live scoring. The frontend team picks their stack separately — everything
+here is a self-contained API/service they can consume.
 
 ## Stack
 
@@ -33,7 +33,7 @@ monday-night-sports/
         │   └── supabase-client.ts      # service-role client factory
         ├── fixtures-public/            # public draw delivery (HTML / text / JSON)
         ├── seasons/                    # organiser: season management
-        └── teams/                      # organiser: team + player management
+        └── teams/                      # organiser: team management
 ```
 
 ## Prerequisites
