@@ -1,0 +1,64 @@
+# Supabase project configuration for local development.
+# `supabase start` reads this to boot the local stack; `supabase functions serve`
+# reads it to know how each Edge Function is exposed. Values here are safe to
+# commit — real secrets live in .env (gitignored) and in the hosted project.
+
+# The `project_id` must be unique per Supabase project on this machine.
+project_id = "monday-night-sports"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 15
+
+[studio]
+enabled = true
+port = 54323
+api_url = "http://127.0.0.1"
+
+[inbucket]
+# Captures outbound email locally so magic-link sign-in can be tested offline.
+enabled = true
+port = 54324
+
+[storage]
+enabled = true
+file_size_limit = "50MiB"
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000"]
+jwt_expiry = 3600
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = false
+
+# Each Edge Function gets its own [functions.<name>] block. `verify_jwt = false`
+# is used for functions we deliberately expose publicly; our own auth guard
+# handles token verification on write routes.
+
+[functions.fixtures-public]
+# Public read endpoint — no JWT required.
+verify_jwt = false
+
+[functions.seasons]
+# Organiser writes; the shared auth guard validates the JWT on write routes,
+# but we let the platform hand tokens through so the guard can inspect them.
+verify_jwt = false
+
+[functions.teams]
+verify_jwt = false
+
+[analytics]
+enabled = false
