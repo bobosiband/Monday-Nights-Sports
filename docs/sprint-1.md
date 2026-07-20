@@ -34,12 +34,22 @@ for the curl examples below. Substitute them into `$URL`, `$ANON`, and
 ## Obtaining an organiser JWT
 
 The write services (`seasons`, `teams`) require a valid Supabase Auth JWT in
-the `Authorization: Bearer <token>` header. For local development:
+the `Authorization: Bearer <token>` header. `requireOrganiser` in
+`_shared/auth.ts` validates the token against Supabase Auth and returns the
+user record on success or a `Response` (401) that the service returns
+unchanged.
 
-1. Create an organiser user in the local project (via the Supabase Studio auth
-   pane, or via the CLI):
+For local development:
+
+1. Create an organiser user. The simplest path is the Studio auth pane
+   (`http://127.0.0.1:54323/project/default/auth/users` → *Add user*). To do
+   it purely from the CLI, hit the local auth signup endpoint with the anon
+   key from `supabase status`:
    ```bash
-   supabase auth users create organiser@example.com --password sup3rsecret
+   curl -X POST "$URL/auth/v1/signup" \
+     -H "apikey: $ANON" \
+     -H "content-type: application/json" \
+     -d '{"email":"organiser@example.com","password":"sup3rsecret"}'
    ```
 2. Exchange those credentials for an access token:
    ```bash
@@ -48,7 +58,8 @@ the `Authorization: Bearer <token>` header. For local development:
      -H "content-type: application/json" \
      -d '{"email":"organiser@example.com","password":"sup3rsecret"}'
    ```
-3. The response's `access_token` field is what you pass as `$TOKEN` below.
+3. The response's `access_token` field is what you pass as `$TOKEN` in the
+   examples below.
 
 In production the organiser signs in via magic link (Supabase Auth) and the
 frontend forwards the resulting session token.
