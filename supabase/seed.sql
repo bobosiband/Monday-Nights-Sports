@@ -89,3 +89,29 @@ insert into public.fixtures (id, event_id, slot_id, home_team_id, away_team_id, 
    'a4444444-4444-4444-4444-444444444444', 'a6666666-6666-6666-6666-666666666666',
    'soccer', 'scheduled')
 on conflict (id) do nothing;
+
+-- Sport configs (soccer + netball) --------------------------------------------
+-- Drives scoring increments, period structure, and standings rules. Story #26
+-- extends and refines these; the shape is deliberately minimal here.
+insert into public.sport_configs (season_id, sport, config) values
+  ('11111111-1111-1111-1111-111111111111', 'soccer',
+   jsonb_build_object(
+     'periods', jsonb_build_object('count', 2, 'minutes', 20, 'direction', 'up'),
+     'score_increments', jsonb_build_array(1),
+     'track_fouls', true,
+     'standings', jsonb_build_object(
+       'points', jsonb_build_object('win', 3, 'draw', 1, 'loss', 0),
+       'tiebreakers', jsonb_build_array('points', 'goal_diff', 'goals_for')
+     )
+   )),
+  ('11111111-1111-1111-1111-111111111111', 'netball',
+   jsonb_build_object(
+     'periods', jsonb_build_object('count', 4, 'minutes', 10, 'direction', 'up'),
+     'score_increments', jsonb_build_array(1),
+     'track_fouls', false,
+     'standings', jsonb_build_object(
+       'points', jsonb_build_object('win', 2, 'draw', 1, 'loss', 0),
+       'tiebreakers', jsonb_build_array('points', 'goal_diff', 'goals_for')
+     )
+   ))
+on conflict (season_id, sport) do nothing;
