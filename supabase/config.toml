@@ -60,5 +60,18 @@ verify_jwt = false
 [functions.teams]
 verify_jwt = false
 
+[functions.scoring]
+# Scored by a match token, not a Supabase Auth JWT — the function verifies
+# the token itself, so the platform-level check is off.
+verify_jwt = false
+
+[functions.match-access]
+# Organiser writes; guard runs inside the function.
+verify_jwt = false
+
+[functions.standings]
+# Public read endpoint — no JWT required.
+verify_jwt = false
+
 [analytics]
 enabled = false
