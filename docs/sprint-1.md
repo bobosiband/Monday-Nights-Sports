@@ -1,7 +1,11 @@
 # Sprint 1 — Backend Foundation
 
-Running log of what ships in Sprint 1 and how to exercise each service. Every
-section maps to one commit on this branch.
+Running log of what shipped in Sprint 1 and how to exercise each service. Every
+section maps to one commit.
+
+> New here? Start at [`overview.md`](overview.md), then read
+> [`scoring-viewing-backend-plan.md`](scoring-viewing-backend-plan.md) for
+> what's being built next.
 
 ## Goal
 

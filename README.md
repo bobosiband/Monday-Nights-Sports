@@ -1,5 +1,7 @@
 # Monday Night Sports
 
+**Start here → [`docs/overview.md`](docs/overview.md).**
+
 Supabase-native backend for a weekly college sports competition. Multiple
 sports run across four evening slots each Monday; this repo hosts the
 API/services that manage seasons, teams, fixtures, results, and (later)

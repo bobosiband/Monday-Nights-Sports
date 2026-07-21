@@ -1,3 +1,20 @@
+> **⚠ Superseded — kept for history only.**
+>
+> This document described a generic Node.js / Express / bcrypt / SSE
+> architecture (`College`, `CollegeAccount`, hand-rolled JWTs, SSE for
+> real-time). The build that actually shipped is Supabase-native: Postgres +
+> RLS + Auth + Realtime, with Deno/TypeScript Edge Functions and the domain
+> model `seasons` / `teams` / `events` / `slots` / `fixtures` / `results`.
+>
+> **Do not use this file as a spec.** Start at
+> [`../overview.md`](../overview.md) and the live plan at
+> [`../scoring-viewing-backend-plan.md`](../scoring-viewing-backend-plan.md).
+> Retained here so the ideas behind the original planning (event-sourced
+> scoring, sport-config-driven semantics, etc.) remain readable — many of
+> them survived, just implemented differently.
+
+---
+
 # Development planning — Monday Night Sports
 
 This document is written for developers of all experience levels. If you're new to the project, read this before touching any code. It explains not just *what* to build but *why* things are ordered the way they are and what to watch out for at each stage.
