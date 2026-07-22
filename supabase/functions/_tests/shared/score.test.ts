@@ -1,17 +1,17 @@
 // -----------------------------------------------------------------------------
-// _shared/score.test.ts
+// _tests/shared/score.test.ts
 //
-// Unit tests for the score-derivation fold. Pure function so we can exercise
-// every branch without a Supabase client.
+// Unit tests for the score-derivation fold in `../../_shared/score.ts`.
+// Pure function so we can exercise every branch without a Supabase client.
 //
-// Run with: `deno test supabase/functions/_shared/score.test.ts`
+// Run with: `deno test supabase/functions/_tests/`
 // -----------------------------------------------------------------------------
 
 import {
   assertEquals,
   assertObjectMatch,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { deriveScore, MatchEvent, SportConfig } from "./score.ts";
+import { deriveScore, MatchEvent, SportConfig } from "../../_shared/score.ts";
 
 const HOME = "11111111-1111-1111-1111-111111111111";
 const AWAY = "22222222-2222-2222-2222-222222222222";
