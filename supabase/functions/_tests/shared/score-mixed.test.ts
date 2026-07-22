@@ -29,8 +29,8 @@ function event(
   over: Partial<MatchEvent> & { type: MatchEvent["type"] },
 ): MatchEvent {
   return {
-    id: crypto.randomUUID(),
-    fixture_id: "f",
+    id: over.id ?? crypto.randomUUID(),
+    fixture_id: over.fixture_id ?? "f",
     type: over.type,
     team_id: over.team_id ?? null,
     player_id: over.player_id ?? null,
@@ -38,8 +38,7 @@ function event(
     period: over.period ?? null,
     match_clock_ms: over.match_clock_ms ?? null,
     voided_at: over.voided_at ?? null,
-    created_at: new Date().toISOString(),
-    ...over,
+    created_at: over.created_at ?? new Date().toISOString(),
   };
 }
 

@@ -9,8 +9,8 @@
 // `reopen: true` (organiser correction path).
 // -----------------------------------------------------------------------------
 
-import { readJson } from "../_shared/validate.ts";
-import { jsonResponse } from "../_shared/cors.ts";
+import { readJson } from "../../_shared/validate.ts";
+import { jsonResponse } from "../../_shared/cors.ts";
 import { badRequest, conflict } from "../errors.ts";
 import { DECIDED_BY, FIXTURE_STATUS, type DecidedBy } from "../constants.ts";
 import {
@@ -20,7 +20,7 @@ import {
   updateFixtureStatus,
   upsertResult,
 } from "../db.ts";
-import { deriveScore } from "../_shared/score.ts";
+import { deriveScore } from "../../_shared/score.ts";
 import { buildPeriodBreakdown } from "../period-breakdown.ts";
 import type {
   FinalizeBody,

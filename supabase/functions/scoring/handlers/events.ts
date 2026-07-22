@@ -11,8 +11,8 @@
 // still ends up with a live-badged fixture.
 // -----------------------------------------------------------------------------
 
-import { readJson } from "../_shared/validate.ts";
-import { jsonResponse } from "../_shared/cors.ts";
+import { readJson } from "../../_shared/validate.ts";
+import { jsonResponse } from "../../_shared/cors.ts";
 import { badRequest, conflict } from "../errors.ts";
 import { FIXTURE_STATUS, type FixtureStatus } from "../constants.ts";
 import {
@@ -22,7 +22,7 @@ import {
   loadSportConfig,
   updateFixtureStatus,
 } from "../db.ts";
-import { deriveScore } from "../_shared/score.ts";
+import { deriveScore } from "../../_shared/score.ts";
 import { validateRecordBody } from "../validate-event.ts";
 import type {
   FixtureContext,

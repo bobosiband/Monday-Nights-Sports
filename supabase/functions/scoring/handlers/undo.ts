@@ -10,7 +10,7 @@
 // wrong row.
 // -----------------------------------------------------------------------------
 
-import { readJson, isUuid } from "../_shared/validate.ts";
+import { readJson, isUuid } from "../../_shared/validate.ts";
 import { badRequest, forbidden, notFound } from "../errors.ts";
 import { client, findEvent, voidEvent } from "../db.ts";
 import { respondDerived } from "../derive.ts";

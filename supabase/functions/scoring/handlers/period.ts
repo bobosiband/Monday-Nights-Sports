@@ -6,7 +6,7 @@
 // has already been ended).
 // -----------------------------------------------------------------------------
 
-import { readJson, positiveInt, nonNegativeInt } from "../_shared/validate.ts";
+import { readJson, positiveInt, nonNegativeInt } from "../../_shared/validate.ts";
 import { badRequest, conflict } from "../errors.ts";
 import { FIXTURE_STATUS } from "../constants.ts";
 import {
