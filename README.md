@@ -1,6 +1,8 @@
 # Monday Night Sports
 
 **Start here → [`docs/overview.md`](docs/overview.md).**
+**Setting up on your machine → [`docs/local-setup.md`](docs/local-setup.md).**
+**Interactive API docs (Swagger UI) → run the stack, then <http://127.0.0.1:54321/functions/v1/api-docs>.**
 
 Supabase-native backend for a weekly college sports competition. Multiple
 sports run across four evening slots each Monday; this repo hosts the
