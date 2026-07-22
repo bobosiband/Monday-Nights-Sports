@@ -1,24 +1,105 @@
 // -----------------------------------------------------------------------------
 // scoring/handlers/period.ts
 //
-// POST /:fixtureId/period — record a period_start or period_end event.
-// Real implementation lands in story #33.
+// POST /:fixtureId/period — record a `period_start` or `period_end`
+// match_event. Guards against ending a period that never opened (or that
+// has already been ended).
 // -----------------------------------------------------------------------------
 
-import { notImplemented } from "../errors.ts";
-import type { FixtureContext } from "../types.ts";
+import { readJson, positiveInt, nonNegativeInt } from "../_shared/validate.ts";
+import { badRequest, conflict } from "../errors.ts";
+import { FIXTURE_STATUS } from "../constants.ts";
+import {
+  client,
+  insertEvent,
+  loadEvents,
+} from "../db.ts";
+import { respondDerived } from "../derive.ts";
+import { periodIsOpen } from "../period-state.ts";
+import type { FixtureContext, PeriodBody } from "../types.ts";
+
+type PeriodIntent = "start" | "end";
 
 /**
- * Record a `period_start` or `period_end` match_event. Guards against
- * ending a period that never opened.
+ * Record a period boundary. Two intents are accepted:
  *
- * @param _request - The incoming request (JSON body: `PeriodBody`).
- * @param _fixture - The pre-loaded fixture context.
- * @returns `DerivedResponse` (once implemented).
+ * - `start` — inserts a `period_start` event. The scoring UI is trusted to
+ *   pick the correct period number; the fold tolerates overlapping periods
+ *   (the last `period_start` wins), so accidental double-starts don't
+ *   corrupt state.
+ * - `end`   — inserts a `period_end` event, but only when the target
+ *   period has a non-voided `period_start` and no non-voided `period_end`
+ *   already. Ending a period that never opened is a client bug we surface
+ *   loudly rather than absorbing.
+ *
+ * @param request - The incoming request; JSON body: `PeriodBody`.
+ * @param fixture - The pre-loaded fixture context.
+ * @returns The derived summary on success; 400 on bad body; 409 when the
+ *          intent contradicts current state.
  */
-export function handlePeriod(
-  _request: Request,
-  _fixture: FixtureContext,
+export async function handlePeriod(
+  request: Request,
+  fixture: FixtureContext,
 ): Promise<Response> {
-  return Promise.resolve(notImplemented("period not implemented"));
+  if (
+    fixture.status === FIXTURE_STATUS.complete ||
+    fixture.status === FIXTURE_STATUS.cancelled
+  ) {
+    return conflict(
+      `Fixture is ${fixture.status}; cannot change period boundaries.`,
+    );
+  }
+
+  const body = await readJson<PeriodBody>(request);
+  if (!body) return badRequest("Request body must be JSON");
+
+  const intent = validateIntent(body.intent);
+  if (!intent) return badRequest("intent must be 'start' or 'end'");
+
+  const period = positiveInt(body.period);
+  if (period === null) return badRequest("period must be a positive integer");
+
+  const clock = body.match_clock_ms === undefined || body.match_clock_ms === null
+    ? null
+    : nonNegativeInt(body.match_clock_ms);
+  if (
+    body.match_clock_ms !== undefined && body.match_clock_ms !== null &&
+    clock === null
+  ) {
+    return badRequest("match_clock_ms must be a non-negative integer");
+  }
+
+  const supabase = client();
+  const events = await loadEvents(supabase, fixture.id);
+
+  if (intent === "end" && !periodIsOpen(events, period)) {
+    return conflict(`Period ${period} is not currently open on this fixture`);
+  }
+
+  await insertEvent(supabase, {
+    id: crypto.randomUUID(),
+    fixture_id: fixture.id,
+    type: intent === "start" ? "period_start" : "period_end",
+    team_id: null,
+    player_id: null,
+    value: null,
+    period,
+    match_clock_ms: clock,
+    voided_at: null,
+    // TODO(Sprint C): populate from token claims.
+    created_by: null,
+  });
+
+  return await respondDerived(supabase, fixture);
+}
+
+/**
+ * Coerce the raw `intent` field into the typed union.
+ *
+ * @param raw - Any value.
+ * @returns The intent, or `null` if unrecognised.
+ */
+function validateIntent(raw: unknown): PeriodIntent | null {
+  if (raw === "start" || raw === "end") return raw;
+  return null;
 }
