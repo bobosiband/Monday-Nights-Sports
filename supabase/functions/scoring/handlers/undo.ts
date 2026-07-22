@@ -1,25 +1,56 @@
 // -----------------------------------------------------------------------------
 // scoring/handlers/undo.ts
 //
-// POST /:fixtureId/undo — soft-void a specific match_event id. Real
-// implementation lands in story #32.
+// POST /:fixtureId/undo — soft-void a specific match_event id. Never
+// deletes: the event stays in the log with `voided_at` set so the audit
+// trail survives, and `deriveScore` skips it on the next fold.
+//
+// Targets a *specific* event id (not "the last event on the server") so
+// an offline queue that drains out of order can't accidentally undo the
+// wrong row.
 // -----------------------------------------------------------------------------
 
-import { notImplemented } from "../errors.ts";
-import type { FixtureContext } from "../types.ts";
+import { readJson, isUuid } from "../_shared/validate.ts";
+import { badRequest, forbidden, notFound } from "../errors.ts";
+import { client, findEvent, voidEvent } from "../db.ts";
+import { respondDerived } from "../derive.ts";
+import type { FixtureContext, UndoBody } from "../types.ts";
 
 /**
- * Soft-void a match_event so it no longer contributes to the derived score.
- * Targets a specific event id (not "the last one") so out-of-order retries
- * from an offline queue stay unambiguous.
+ * Soft-void a match_event so it stops contributing to the derived score.
+ * Idempotent: undoing an already-voided event returns 200 with the current
+ * derived state.
  *
- * @param _request - The incoming request (JSON body: `UndoBody`).
- * @param _fixture - The pre-loaded fixture context.
- * @returns `DerivedResponse` (once implemented).
+ * @param request - The incoming request; JSON body: `UndoBody`.
+ * @param fixture - The pre-loaded fixture context.
+ * @returns 400 on bad body, 404 on missing event, 403 when the event
+ *          belongs to a different fixture, 200 with the derived summary
+ *          on success (or no-op replay).
  */
-export function handleUndo(
-  _request: Request,
-  _fixture: FixtureContext,
+export async function handleUndo(
+  request: Request,
+  fixture: FixtureContext,
 ): Promise<Response> {
-  return Promise.resolve(notImplemented("undo not implemented"));
+  const body = await readJson<UndoBody>(request);
+  if (!body || !isUuid(body.event_id)) {
+    return badRequest("event_id (uuid) is required");
+  }
+  const eventId = body.event_id as string;
+
+  const supabase = client();
+
+  const existing = await findEvent(supabase, eventId);
+  if (!existing) return notFound("Event not found");
+  if (existing.fixture_id !== fixture.id) {
+    // Cross-fixture undo would let a compromised match token reach beyond
+    // its scope. Refuse loudly rather than silently no-op.
+    return forbidden("Event does not belong to this fixture");
+  }
+
+  // voidEvent is a conditional update (WHERE voided_at IS NULL); the
+  // handler treats "already voided" as a successful replay.
+  // TODO(Sprint C): pass token subject once the guard populates it.
+  await voidEvent(supabase, eventId, null);
+
+  return await respondDerived(supabase, fixture);
 }
