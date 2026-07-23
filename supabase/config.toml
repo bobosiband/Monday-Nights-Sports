@@ -73,5 +73,9 @@ verify_jwt = false
 # Public read endpoint — no JWT required.
 verify_jwt = false
 
+[functions.api-docs]
+# Public interactive docs (Swagger UI). Reads the sibling openapi.yaml.
+verify_jwt = false
+
 [analytics]
 enabled = false
