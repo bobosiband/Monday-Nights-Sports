@@ -8,22 +8,21 @@
 //   GET /api-docs                    → Swagger UI HTML (loads the yaml below)
 //   GET /api-docs/openapi.yaml       → the raw OpenAPI 3.1 document
 //
-// The YAML is embedded as a string constant. The source-of-truth file lives
-// at `docs/openapi.yaml`; when it changes, refresh this string via the
-// small sync script in `scripts/sync-openapi.sh` (or copy-paste for a
-// one-off change and add a TODO).
+// The YAML is embedded as a string constant in the generated `openapi.ts`
+// module. The source-of-truth file lives at `docs/openapi.yaml`; when it
+// changes, regenerate the module via `scripts/sync-openapi.sh`.
+//
+// It is embedded (rather than read from a sibling .yaml at request time)
+// because Supabase's edge runtime compiles each function into a scratch dir
+// and only copies the module graph — not static assets — so a runtime
+// Deno.readTextFile("./openapi.yaml") fails with NotFound. Importing the
+// spec makes it part of the module graph, so it resolves both locally and
+// once deployed.
 // -----------------------------------------------------------------------------
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { corsHeaders, handlePreflight } from "../_shared/cors.ts";
-
-// The OpenAPI document is loaded from a sibling file so it stays in sync
-// with docs/openapi.yaml (which is copied into this folder by
-// scripts/sync-openapi.sh before deploy). The dynamic import path uses
-// import.meta.url so it resolves the same locally and on the platform.
-const OPENAPI_YAML = await Deno.readTextFile(
-  new URL("./openapi.yaml", import.meta.url),
-);
+import { OPENAPI_YAML } from "./openapi.ts";
 
 /**
  * Build the Swagger UI HTML page. Uses the CDN build so we do not have
