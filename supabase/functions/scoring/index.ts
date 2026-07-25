@@ -15,6 +15,7 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { handlePreflight } from "../_shared/cors.ts";
+import { verifyMatchToken } from "../_shared/match-token.ts";
 import {
   badRequest,
   forbidden,
@@ -22,7 +23,6 @@ import {
   notFound,
   serverError,
 } from "./errors.ts";
-import { verifyMatchToken } from "./guard.ts";
 import { client, loadFixtureContext } from "./db.ts";
 import { handleStart } from "./handlers/start.ts";
 import { handleRecordEvent } from "./handlers/events.ts";
@@ -37,10 +37,16 @@ import { isUuid } from "../_shared/validate.ts";
  * the `scoring` segment matches the pattern used elsewhere in this repo so
  * mount-point differences between the platform and local dev don't matter.
  *
+ * A bare `POST /scoring/:fixtureId` (no action segment) intentionally
+ * returns 404: every scoring intent has a named action, so there is no
+ * meaningful default. The `parts.length < idx + 3` check enforces this.
+ *
  * @param request - The incoming request.
  * @returns `{ fixtureId, action }` or `null` if the path doesn't match.
  */
-function parseRoute(request: Request): { fixtureId: string; action: string } | null {
+function parseRoute(
+  request: Request,
+): { fixtureId: string; action: string } | null {
   const parts = new URL(request.url).pathname.split("/").filter(Boolean);
   const idx = parts.lastIndexOf("scoring");
   if (idx < 0 || parts.length < idx + 3) return null;
@@ -68,8 +74,12 @@ serve(async (request) => {
   if (!isUuid(route.fixtureId)) return badRequest("Invalid fixture id");
   if (!isScoringAction(route.action)) return notFound("Unknown action");
 
-  const claims = verifyMatchToken(request, route.fixtureId);
+  const claims = await verifyMatchToken(request);
   if (claims instanceof Response) return claims;
+  // Guard proves the caller holds a validly-signed, unrevoked, unexpired
+  // token — but not that it targets the fixture named in the URL. That
+  // cross-check happens here: reject when someone tries to use a token
+  // issued for fixture A to write against fixture B.
   if (claims.fixture_id !== route.fixtureId) {
     return forbidden("Token does not match fixture");
   }

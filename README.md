@@ -59,11 +59,18 @@ supabase db reset
 supabase functions serve
 ```
 
-Environment variables the functions read (auto-injected by the platform, only
-needed manually if you run functions outside `supabase functions serve`):
+Environment variables the functions read:
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+| Var | Purpose | Auto-set by CLI? |
+|---|---|---|
+| `SUPABASE_URL` | Postgres + Auth base URL | ✅ yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Bypass-RLS DB client used by every Edge Function | ✅ yes |
+| `MATCH_TOKEN_SECRET` | HMAC secret for signing / verifying scoped scoring tokens (ADR 0001). Must be a long random string in production, and must be **different** from the Supabase Auth JWT secret. Rotating it invalidates every outstanding match token. | ❌ **you must set** |
+
+For local dev, add `MATCH_TOKEN_SECRET` to `supabase/.env.local` (or export
+it in your shell before `supabase functions serve`). See
+[`docs/decisions/0001-operator-access-model.md`](docs/decisions/0001-operator-access-model.md)
+for the design rationale.
 
 ## Deploying
 
