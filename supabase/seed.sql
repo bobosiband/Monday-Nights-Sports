@@ -90,6 +90,36 @@ insert into public.fixtures (id, event_id, slot_id, home_team_id, away_team_id, 
    'soccer', 'scheduled')
 on conflict (id) do nothing;
 
+-- Demo operator code (LOCAL DEV ONLY) -----------------------------------------
+-- One long-lived match-access code for the seeded soccer fixture so the
+-- scoring smoke script can hit the guarded routes without a mint step.
+--
+-- Raw code:   'DEVCODE1'
+-- Hash:       sha256(lower('DEVCODE1'))  — same normalisation as
+--             _shared/match-token.ts (uppercase-then-hash there; we just
+--             lowercase the literal here since sha256 is case-sensitive on
+--             the byte stream, and the helper normalises to upper before
+--             hashing). The value below is `echo -n 'DEVCODE1' | sha256sum`.
+--
+-- ⚠️  This seed inserts a code that never expires until 2099. NEVER copy
+--     this into a production database. Rotate/remove before deploying.
+insert into public.match_access (
+  id, fixture_id, code_hash, label, expires_at, revoked_at, last_used_at
+) values (
+  'b0000000-0000-0000-0000-000000000dea',
+  'f0111111-1111-1111-1111-111111111111',
+  -- sha256 of 'DEVCODE1' (the ASCII bytes of the normalised code):
+  -- computed once and pinned so `supabase db reset` is deterministic.
+  --   $ printf 'DEVCODE1' | sha256sum
+  --   aad7a097044dc750d29eec9ab8f7996a43b81f6cfdd036e34254c866d576c618
+  'aad7a097044dc750d29eec9ab8f7996a43b81f6cfdd036e34254c866d576c618',
+  'seed: local dev — DEVCODE1',
+  timestamptz '2099-12-31 23:59:59+00',
+  null,
+  null
+)
+on conflict (id) do nothing;
+
 -- Sport configs (soccer + netball) --------------------------------------------
 -- Drives scoring increments, period structure, and standings rules. Story #26
 -- extends and refines these; the shape is deliberately minimal here.

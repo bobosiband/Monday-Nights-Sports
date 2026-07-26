@@ -1,230 +1,177 @@
 // -----------------------------------------------------------------------------
 // _tests/shared/match-token.test.ts
 //
-// Unit tests for the match-token primitive. The signature + expiry paths are
-// pure and testable without a DB; revocation is exercised via the injectable
-// `isRevoked` seam on `verifyMatchToken`.
+// Unit tests for the opaque match-code primitive. Everything under test is
+// pure crypto + string handling; no DB, no network. The DB revocation +
+// verification path is tested at the scoring/guard layer.
 //
 // Run with: `deno test supabase/functions/_tests/`
 // -----------------------------------------------------------------------------
 
+import { assertEquals, assertNotEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
-  assertEquals,
-  assertRejects,
-} from "https://deno.land/std@0.224.0/assert/mod.ts";
-import {
-  MATCH_TOKEN_MAX_TTL_SECONDS,
-  mintMatchToken,
-  verifyMatchToken,
-  verifyMatchTokenSignature,
+  extractBearer,
+  generateMatchCode,
+  hashMatchCode,
+  MATCH_CODE_ALPHABET,
+  MATCH_CODE_LENGTH,
+  normaliseMatchCode,
 } from "../../_shared/match-token.ts";
 
-// Fixed secret for tests. Setting via Deno.env is fine here — the whole
-// process is short-lived and every test uses the same secret.
-Deno.env.set("MATCH_TOKEN_SECRET", "test-secret-please-do-not-use-in-prod");
+// ---------- alphabet + generation -----------------------------------------
 
-const FIXTURE = "f0111111-1111-1111-1111-111111111111";
-const OP = "11111111-2222-3333-4444-555555555555";
+Deno.test("alphabet: excludes the confusable characters I / L / O / U", () => {
+  for (const ch of ["I", "L", "O", "U"]) {
+    assertEquals(
+      MATCH_CODE_ALPHABET.includes(ch),
+      false,
+      `alphabet must not contain ${ch}`,
+    );
+  }
+});
 
-const neverRevoked = () => Promise.resolve(false);
-const alwaysRevoked = () => Promise.resolve(true);
+Deno.test("alphabet: is all uppercase and digits, no duplicates", () => {
+  const seen = new Set<string>();
+  for (const ch of MATCH_CODE_ALPHABET) {
+    assertEquals(
+      /^[0-9A-Z]$/.test(ch),
+      true,
+      `unexpected alphabet char: ${ch}`,
+    );
+    assertEquals(seen.has(ch), false, `duplicate alphabet char: ${ch}`);
+    seen.add(ch);
+  }
+});
 
-/**
- * Build a Request carrying a bearer token, so the guard path can be
- * exercised without a live HTTP server.
- *
- * @param token - The raw signed JWT.
- * @returns A Request with the Authorization header set.
- */
-function requestWith(token: string): Request {
-  return new Request("http://test/scoring/f/start", {
-    method: "POST",
-    headers: { authorization: `Bearer ${token}` },
-  });
+Deno.test("generateMatchCode: default length matches MATCH_CODE_LENGTH", () => {
+  const code = generateMatchCode();
+  assertEquals(code.length, MATCH_CODE_LENGTH);
+});
+
+Deno.test("generateMatchCode: honours a custom length", () => {
+  assertEquals(generateMatchCode(4).length, 4);
+  assertEquals(generateMatchCode(16).length, 16);
+});
+
+Deno.test("generateMatchCode: every character is from the alphabet", () => {
+  // Generate a few dozen codes so a stray sample from outside the alphabet
+  // is overwhelmingly likely to surface.
+  for (let i = 0; i < 40; i++) {
+    const code = generateMatchCode();
+    for (const ch of code) {
+      assertEquals(
+        MATCH_CODE_ALPHABET.includes(ch),
+        true,
+        `code ${code} contains out-of-alphabet char ${ch}`,
+      );
+    }
+  }
+});
+
+Deno.test("generateMatchCode: two consecutive calls (almost never) collide", () => {
+  // Not a distribution test — just a sanity check that we're actually
+  // drawing entropy, not returning a constant.
+  const a = generateMatchCode();
+  const b = generateMatchCode();
+  assertNotEquals(a, b);
+});
+
+Deno.test("generateMatchCode: refuses a non-positive length", () => {
+  let threw = false;
+  try {
+    generateMatchCode(0);
+  } catch {
+    threw = true;
+  }
+  assertEquals(threw, true);
+});
+
+// ---------- normalisation --------------------------------------------------
+
+Deno.test("normaliseMatchCode: uppercases", () => {
+  assertEquals(normaliseMatchCode("abcd1234"), "ABCD1234");
+});
+
+Deno.test("normaliseMatchCode: strips hyphens", () => {
+  assertEquals(normaliseMatchCode("abcd-1234"), "ABCD1234");
+});
+
+Deno.test("normaliseMatchCode: strips whitespace and underscores", () => {
+  assertEquals(normaliseMatchCode(" ab cd_12\t34\n"), "ABCD1234");
+});
+
+Deno.test("normaliseMatchCode: leaves already-canonical input untouched", () => {
+  assertEquals(normaliseMatchCode("ABCD1234"), "ABCD1234");
+});
+
+// ---------- hashing --------------------------------------------------------
+
+Deno.test("hashMatchCode: is stable across calls", async () => {
+  const a = await hashMatchCode("ABCD1234");
+  const b = await hashMatchCode("ABCD1234");
+  assertEquals(a, b);
+});
+
+Deno.test("hashMatchCode: canonicalises before hashing (case / dashes)", async () => {
+  const canonical = await hashMatchCode("ABCD1234");
+  const messyCase = await hashMatchCode("abcd1234");
+  const messyDash = await hashMatchCode("abcd-1234");
+  const messySpace = await hashMatchCode(" ABCD 1234 ");
+  assertEquals(messyCase, canonical);
+  assertEquals(messyDash, canonical);
+  assertEquals(messySpace, canonical);
+});
+
+Deno.test("hashMatchCode: distinct inputs produce distinct hashes", async () => {
+  const a = await hashMatchCode("ABCD1234");
+  const b = await hashMatchCode("ABCD1235");
+  assertNotEquals(a, b);
+});
+
+Deno.test("hashMatchCode: is 64 lowercase hex characters (SHA-256)", async () => {
+  const h = await hashMatchCode("ABCD1234");
+  assertEquals(h.length, 64);
+  assertEquals(/^[0-9a-f]{64}$/.test(h), true);
+});
+
+Deno.test("hashMatchCode: matches the seed's pinned digest for 'DEVCODE1'", async () => {
+  // If this ever drifts, the seeded dev code in supabase/seed.sql needs
+  // its `code_hash` regenerated. See seed.sql for the shell command.
+  const h = await hashMatchCode("DEVCODE1");
+  assertEquals(
+    h,
+    "aad7a097044dc750d29eec9ab8f7996a43b81f6cfdd036e34254c866d576c618",
+  );
+});
+
+// ---------- bearer extraction ---------------------------------------------
+
+function requestWith(headerValue?: string): Request {
+  const headers: Record<string, string> = {};
+  if (headerValue !== undefined) headers.authorization = headerValue;
+  return new Request("http://test/scoring/f/start", { method: "POST", headers });
 }
 
-// ---------- mint + verify round trip ---------------------------------------
-
-Deno.test("round trip: minted token verifies and yields the right fixture_id", async () => {
-  const minted = await mintMatchToken(FIXTURE, 60, OP);
-  const claims = await verifyMatchTokenSignature(minted.token);
-  if ("error" in claims) throw new Error(`unexpected error: ${claims.error}`);
-  assertEquals(claims.fixture_id, FIXTURE);
-  assertEquals(claims.jti, minted.id);
-  assertEquals(claims.sub, OP);
+Deno.test("extractBearer: pulls the value after Bearer", () => {
+  assertEquals(extractBearer(requestWith("Bearer ABCD1234")), "ABCD1234");
 });
 
-Deno.test("guard path: valid token yields claims, no DB access", async () => {
-  const minted = await mintMatchToken(FIXTURE, 60, null);
-  const result = await verifyMatchToken(
-    requestWith(minted.token),
-    neverRevoked,
-  );
-  if (result instanceof Response) {
-    throw new Error("expected claims, got Response");
-  }
-  assertEquals(result.fixture_id, FIXTURE);
+Deno.test("extractBearer: accepts lower-case scheme", () => {
+  assertEquals(extractBearer(requestWith("bearer ABCD1234")), "ABCD1234");
 });
 
-// ---------- tampering -------------------------------------------------------
-
-Deno.test("tampered payload → rejected as invalid signature", async () => {
-  const minted = await mintMatchToken(FIXTURE, 60, null);
-  const [headerB64, payloadB64, sigB64] = minted.token.split(".");
-  // Flip one bit in the payload — invalidates the HMAC.
-  const tamperedByte = payloadB64.charAt(0) === "A" ? "B" : "A";
-  const tamperedPayload = tamperedByte + payloadB64.slice(1);
-  const tampered = `${headerB64}.${tamperedPayload}.${sigB64}`;
-
-  const result = await verifyMatchTokenSignature(tampered);
-  if (!("error" in result)) {
-    throw new Error("expected error, got claims");
-  }
-  assertEquals(result.error, "Invalid signature");
+Deno.test("extractBearer: trims leading/trailing whitespace on the value", () => {
+  assertEquals(extractBearer(requestWith("Bearer   ABCD1234   ")), "ABCD1234");
 });
 
-Deno.test("tampered signature → rejected", async () => {
-  const minted = await mintMatchToken(FIXTURE, 60, null);
-  const [headerB64, payloadB64, sigB64] = minted.token.split(".");
-  const bad = sigB64.slice(0, -2) + (sigB64.endsWith("AA") ? "BB" : "AA");
-  const result = await verifyMatchTokenSignature(
-    `${headerB64}.${payloadB64}.${bad}`,
-  );
-  assertEquals("error" in result, true);
+Deno.test("extractBearer: returns null when the header is missing", () => {
+  assertEquals(extractBearer(requestWith(undefined)), null);
 });
 
-Deno.test("malformed token (wrong segment count) → rejected", async () => {
-  const result = await verifyMatchTokenSignature("just.two");
-  if (!("error" in result)) throw new Error("expected error");
-  assertEquals(result.error, "Malformed token");
+Deno.test("extractBearer: returns null for a non-bearer scheme", () => {
+  assertEquals(extractBearer(requestWith("Basic dXNlcjpwYXNz")), null);
 });
 
-// ---------- expiry ----------------------------------------------------------
-
-Deno.test("expired token → rejected", async () => {
-  const minted = await mintMatchToken(FIXTURE, 1, null);
-  // Advance clock past the 1s TTL by pretending it's a minute later.
-  const future = new Date(Date.now() + 60_000);
-  const result = await verifyMatchTokenSignature(minted.token, future);
-  if (!("error" in result)) throw new Error("expected error");
-  assertEquals(result.error, "Token expired");
-});
-
-Deno.test("guard rejects expired token with 401", async () => {
-  const minted = await mintMatchToken(FIXTURE, 1, null);
-  // We can't easily inject `now` into the guard, but the pure path proves
-  // expiry is enforced; here we just confirm a still-valid token passes so
-  // the wiring is sane end-to-end.
-  const result = await verifyMatchToken(
-    requestWith(minted.token),
-    neverRevoked,
-  );
-  if (result instanceof Response) {
-    throw new Error(`expected claims, got ${result.status}`);
-  }
-});
-
-// ---------- revocation ------------------------------------------------------
-
-Deno.test("revoked token → 401 from guard", async () => {
-  const minted = await mintMatchToken(FIXTURE, 60, null);
-  const result = await verifyMatchToken(
-    requestWith(minted.token),
-    alwaysRevoked,
-  );
-  if (!(result instanceof Response)) {
-    throw new Error("expected Response, got claims");
-  }
-  assertEquals(result.status, 401);
-  const body = await result.json();
-  assertEquals(body.error, "Token revoked");
-});
-
-// ---------- header handling -------------------------------------------------
-
-Deno.test("missing Authorization header → 401", async () => {
-  const req = new Request("http://test/scoring/f/start", { method: "POST" });
-  const result = await verifyMatchToken(req, neverRevoked);
-  if (!(result instanceof Response)) throw new Error("expected Response");
-  assertEquals(result.status, 401);
-});
-
-Deno.test("non-bearer scheme → 401", async () => {
-  const req = new Request("http://test/scoring/f/start", {
-    method: "POST",
-    headers: { authorization: "Basic dXNlcjpwYXNz" },
-  });
-  const result = await verifyMatchToken(req, neverRevoked);
-  if (!(result instanceof Response)) throw new Error("expected Response");
-  assertEquals(result.status, 401);
-});
-
-Deno.test("empty bearer value → 401", async () => {
-  const req = new Request("http://test/scoring/f/start", {
-    method: "POST",
-    headers: { authorization: "Bearer " },
-  });
-  const result = await verifyMatchToken(req, neverRevoked);
-  if (!(result instanceof Response)) throw new Error("expected Response");
-  assertEquals(result.status, 401);
-});
-
-// ---------- TTL bounds ------------------------------------------------------
-
-Deno.test("ttl above the bounded max → mint refuses", async () => {
-  await assertRejects(
-    () => mintMatchToken(FIXTURE, MATCH_TOKEN_MAX_TTL_SECONDS + 1, null),
-    Error,
-    "MATCH_TOKEN_MAX_TTL_SECONDS",
-  );
-});
-
-Deno.test("ttl of zero → mint refuses", async () => {
-  await assertRejects(() => mintMatchToken(FIXTURE, 0, null), Error);
-});
-
-Deno.test("ttl of negative → mint refuses", async () => {
-  await assertRejects(() => mintMatchToken(FIXTURE, -1, null), Error);
-});
-
-// ---------- type discriminator ---------------------------------------------
-
-Deno.test("Supabase-shaped JWT (no typ='match_token') → rejected", async () => {
-  // Hand-craft a JWT with the same secret but no typ claim; verify refuses.
-  const header = { alg: "HS256", typ: "JWT" };
-  const payload = {
-    fixture_id: FIXTURE,
-    jti: crypto.randomUUID(),
-    iat: Math.floor(Date.now() / 1000),
-    exp: Math.floor(Date.now() / 1000) + 60,
-    sub: null,
-    // typ omitted
-  };
-  const enc = (s: string) =>
-    btoa(unescape(encodeURIComponent(s)))
-      .replaceAll("+", "-")
-      .replaceAll("/", "_")
-      .replaceAll("=", "");
-  const message = `${enc(JSON.stringify(header))}.${
-    enc(JSON.stringify(payload))
-  }`;
-  const key = await crypto.subtle.importKey(
-    "raw",
-    new TextEncoder().encode("test-secret-please-do-not-use-in-prod"),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sig = new Uint8Array(
-    await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(message)),
-  );
-  let bin = "";
-  for (const b of sig) bin += String.fromCharCode(b);
-  const sigB64 = btoa(bin).replaceAll("+", "-").replaceAll("/", "_")
-    .replaceAll("=", "");
-  const forged = `${message}.${sigB64}`;
-
-  const result = await verifyMatchTokenSignature(forged);
-  if (!("error" in result)) throw new Error("expected error");
-  assertEquals(result.error, "Wrong token type");
+Deno.test("extractBearer: returns null for an empty bearer value", () => {
+  assertEquals(extractBearer(requestWith("Bearer   ")), null);
 });

@@ -1,6 +1,8 @@
 # ADR 0001 — Operator access model: signed JWT + DB revocation list
 
-**Status:** Accepted, 2026-07-25.
+**Status:** Superseded by
+[ADR 0002](0002-operator-access-model-v2.md) on 2026-07-26. See that ADR
+for the model that actually shipped.
 **Stories:** #36 (decide + implement primitive), #38 (use it in scoring).
 **Supersedes:** the open question in
 [`../scoring-viewing-backend-plan.md`](../scoring-viewing-backend-plan.md) §8.
