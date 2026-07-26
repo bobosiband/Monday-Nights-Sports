@@ -235,3 +235,31 @@ under an epic. Tasks = checklist items or sub-issues.
 - Push notifications.
 - Admin panel / role hierarchy beyond "any authed user = organiser".
 - Round-robin draw generator (separate track).
+
+---
+
+## Next sprint — `events` service (draw builder)
+
+Right now the draw for a Monday night exists only because `seed.sql`
+inserts one. There is **no organiser-facing API** for creating an
+`event`, its `slots`, and its `fixtures`, or for publishing the draw.
+That means the "organiser builds the draw" step of the arc in
+[`overview.md`](overview.md) has no backend behind it — every downstream
+service (fixtures-public, live, standings, results-public) reads data an
+organiser cannot yet write in production.
+
+This is out of scope for Sprint C/D/E but is the next sprint's headline:
+
+- **`events`** function: CRUD on events, slots, fixtures.
+  - `POST   /events` — create an event in a season on a date.
+  - `POST   /events/:id/slots` — add a slot (slot_number, starts_at, pitch).
+  - `POST   /events/:id/fixtures` — add a fixture (slot_id, home/away, sport).
+  - `PATCH  /events/:id` / `DELETE /events/:id` etc.
+  - `POST   /events/:id/publish` — single-action publish (sets
+    `is_published=true`, stamps `published_at`).
+
+RLS on events / slots / fixtures already gates public reads on
+`is_published`, so the publish action really is a single-column flip —
+no fan-out. The heavy work is the CRUD ergonomics: bulk-add slots,
+bulk-add fixtures, a "generate round-robin" helper (which itself is a
+follow-up sprint per §9).
