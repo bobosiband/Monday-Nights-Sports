@@ -10,8 +10,13 @@
 //   GET /fixtures-public?event=<uuid>&format=json  → JSON (debug / integrators)
 //
 // RLS on the underlying tables restricts reads to published events, so an
-// unpublished event id returns 404 even with a valid client — no separate
-// check needed here.
+// unpublished event id returns 404 even with a valid client.
+//
+// Sprint C additions: a LIVE badge is surfaced per fixture using
+// `fixtures.status`, and a running score is shown for live fixtures
+// (from `fixture_live_state`) and final scores for completed fixtures
+// (from `results`). Rendering lives in `./render.ts`; this file is the
+// HTTP + DB glue only.
 // -----------------------------------------------------------------------------
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
@@ -21,16 +26,24 @@ import {
   jsonResponse,
 } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase-client.ts";
+import {
+  type PublicEvent,
+  type PublicFixture,
+  renderHtml,
+  renderText,
+} from "./render.ts";
 
+/** DB-shape row for a fixture with team + slot joins. */
 interface FixtureRow {
   id: string;
   sport: string;
-  status: string;
+  status: "scheduled" | "live" | "complete" | "cancelled";
   slots: { slot_number: number; starts_at: string; pitch: string | null } | null;
   home_team: { name: string } | null;
   away_team: { name: string } | null;
 }
 
+/** DB-shape row for an event with the season name join. */
 interface EventRow {
   id: string;
   event_date: string;
@@ -38,15 +51,21 @@ interface EventRow {
   seasons: { name: string } | null;
 }
 
+/** DB-shape rows for the two score sources. */
+interface LiveStateRow { fixture_id: string; home_score: number; away_score: number }
+interface ResultRow { fixture_id: string; home_score: number; away_score: number }
+
 /**
- * Load a published event and its fixtures. Returns `null` when the event
- * doesn't exist or isn't published — RLS handles the publication check.
+ * Load a published event + its fixtures + score rows in the minimum
+ * queries needed. RLS handles the "must be published" check on every
+ * table involved.
  *
  * @param eventId - UUID of the event.
- * @returns The event row plus its fixtures ordered by slot, or `null`.
+ * @returns The rendered-ready shape, or `null` when the event isn't
+ *          published (or doesn't exist).
  */
-async function loadPublishedEvent(eventId: string): Promise<
-  { event: EventRow; fixtures: FixtureRow[] } | null
+async function loadPublicEvent(eventId: string): Promise<
+  { event: PublicEvent; fixtures: PublicFixture[] } | null
 > {
   const supabase = createServiceClient();
 
@@ -56,7 +75,6 @@ async function loadPublishedEvent(eventId: string): Promise<
     .eq("id", eventId)
     .eq("is_published", true)
     .maybeSingle<EventRow>();
-
   if (eventError) throw eventError;
   if (!event) return null;
 
@@ -68,113 +86,90 @@ async function loadPublishedEvent(eventId: string): Promise<
        home_team:home_team_id ( name ),
        away_team:away_team_id ( name )`,
     )
-    .eq("event_id", eventId)
-    .order("slot_id", { ascending: true });
-
+    .eq("event_id", eventId);
   if (fixturesError) throw fixturesError;
-
   const rows = (fixtures ?? []) as unknown as FixtureRow[];
   rows.sort((a, b) => (a.slots?.slot_number ?? 0) - (b.slots?.slot_number ?? 0));
-  return { event, fixtures: rows };
+
+  const ids = rows.map((r) => r.id);
+
+  // Two parallel score lookups. Empty `ids` short-circuits so an event
+  // with no fixtures still returns cleanly (edge case, but cheap).
+  const [liveMap, resultMap] = ids.length === 0
+    ? [new Map<string, LiveStateRow>(), new Map<string, ResultRow>()]
+    : await Promise.all([loadLiveMap(ids), loadResultMap(ids)]);
+
+  const publicEvent: PublicEvent = {
+    id: event.id,
+    event_date: event.event_date,
+    season_name: event.seasons?.name ?? null,
+  };
+
+  const publicFixtures: PublicFixture[] = rows.map((row) => {
+    // Prefer results (locked-in final) over live-state (in-flight cache).
+    const result = resultMap.get(row.id);
+    const live = liveMap.get(row.id);
+    const score =
+      result
+        ? { home: result.home_score, away: result.away_score }
+        : live
+        ? { home: live.home_score, away: live.away_score }
+        : null;
+
+    return {
+      id: row.id,
+      sport: row.sport,
+      status: row.status,
+      slot: row.slots
+        ? {
+          slot_number: row.slots.slot_number,
+          starts_at: row.slots.starts_at,
+          pitch: row.slots.pitch,
+        }
+        : null,
+      home_team_name: row.home_team?.name ?? null,
+      away_team_name: row.away_team?.name ?? null,
+      score,
+    };
+  });
+
+  return { event: publicEvent, fixtures: publicFixtures };
 }
 
 /**
- * Format a fixture as a single plain-text line suitable for pasting into a
- * chat app. Byes render with a trailing "(bye)".
+ * Load fixture_live_state rows for a set of fixture ids.
  *
- * @param fixture - A fixture row with slot + team relations expanded.
- * @returns The one-line string.
+ * @param ids - Fixture ids to fetch.
+ * @returns A map keyed by fixture_id.
  */
-function fixtureAsTextLine(fixture: FixtureRow): string {
-  const slot = fixture.slots;
-  const time = slot ? slot.starts_at.slice(0, 5) : "??:??";
-  const pitch = slot?.pitch ? ` @ ${slot.pitch}` : "";
-  const home = fixture.home_team?.name ?? "TBD";
-  const away = fixture.away_team?.name;
-  const match = away ? `${home} vs ${away}` : `${home} (bye)`;
-  return `Slot ${slot?.slot_number ?? "?"} — ${time}${pitch} — ${fixture.sport}: ${match}`;
+async function loadLiveMap(ids: string[]): Promise<Map<string, LiveStateRow>> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("fixture_live_state")
+    .select("fixture_id, home_score, away_score")
+    .in("fixture_id", ids);
+  if (error) throw error;
+  const out = new Map<string, LiveStateRow>();
+  for (const r of (data ?? []) as LiveStateRow[]) out.set(r.fixture_id, r);
+  return out;
 }
 
 /**
- * Escape a string for safe interpolation into HTML. Small helper so the
- * function has no runtime template dependency.
+ * Load results rows for a set of fixture ids.
  *
- * @param value - Raw string.
- * @returns HTML-escaped string.
+ * @param ids - Fixture ids to fetch.
+ * @returns A map keyed by fixture_id.
  */
-function escapeHtml(value: string): string {
-  return value
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
-}
-
-/**
- * Render the event and its fixtures as a mobile-friendly HTML page. Kept as
- * a single string template — no framework, so the frontend team is free to
- * replace this with anything later without touching the API surface.
- *
- * @param event - The event row.
- * @param fixtures - Ordered fixtures for the event.
- * @returns Full HTML document.
- */
-function renderHtml(event: EventRow, fixtures: FixtureRow[]): string {
-  const seasonName = event.seasons?.name ?? "Season";
-  const title = `${escapeHtml(seasonName)} — ${escapeHtml(event.event_date)}`;
-  const rows = fixtures
-    .map((f) => {
-      const slot = f.slots;
-      const time = slot ? slot.starts_at.slice(0, 5) : "??:??";
-      const pitch = slot?.pitch ? escapeHtml(slot.pitch) : "";
-      const home = escapeHtml(f.home_team?.name ?? "TBD");
-      const away = f.away_team?.name ? escapeHtml(f.away_team.name) : null;
-      const match = away ? `${home} <span class="v">vs</span> ${away}` : `${home} <em>(bye)</em>`;
-      return `
-        <li class="card">
-          <div class="slot">Slot ${slot?.slot_number ?? "?"}</div>
-          <div class="time">${time}${pitch ? ` · ${pitch}` : ""}</div>
-          <div class="sport">${escapeHtml(f.sport)}</div>
-          <div class="match">${match}</div>
-        </li>`;
-    })
-    .join("");
-
-  return `<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>${title}</title>
-  <style>
-    :root { color-scheme: dark; }
-    body { margin: 0; font-family: system-ui, -apple-system, sans-serif;
-      background: #0b0f14; color: #e6edf3; }
-    header { padding: 1.25rem 1rem; border-bottom: 1px solid #1f2937; }
-    header h1 { margin: 0; font-size: 1.1rem; font-weight: 600; }
-    header p { margin: 0.25rem 0 0; color: #94a3b8; font-size: 0.9rem; }
-    ul { list-style: none; margin: 0; padding: 1rem; display: grid; gap: 0.75rem; }
-    .card { background: #111827; border: 1px solid #1f2937; border-radius: 12px;
-      padding: 0.9rem 1rem; display: grid; gap: 0.15rem; }
-    .slot { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;
-      color: #38bdf8; font-weight: 600; }
-    .time { color: #94a3b8; font-size: 0.85rem; }
-    .sport { font-size: 0.85rem; color: #cbd5e1; }
-    .match { font-size: 1.05rem; font-weight: 600; }
-    .v { color: #64748b; font-weight: 400; padding: 0 0.4rem; }
-    footer { padding: 1rem; color: #64748b; font-size: 0.8rem; text-align: center; }
-  </style>
-</head>
-<body>
-  <header>
-    <h1>${title}</h1>
-    <p>Tonight's draw</p>
-  </header>
-  <ul>${rows}</ul>
-  <footer>Monday Night Sports</footer>
-</body>
-</html>`;
+async function loadResultMap(ids: string[]): Promise<Map<string, ResultRow>> {
+  const supabase = createServiceClient();
+  const { data, error } = await supabase
+    .from("results")
+    .select("fixture_id, home_score, away_score")
+    .in("fixture_id", ids);
+  if (error) throw error;
+  const out = new Map<string, ResultRow>();
+  for (const r of (data ?? []) as ResultRow[]) out.set(r.fixture_id, r);
+  return out;
 }
 
 serve(async (request) => {
@@ -194,7 +189,7 @@ serve(async (request) => {
   }
 
   try {
-    const result = await loadPublishedEvent(eventId);
+    const result = await loadPublicEvent(eventId);
     if (!result) {
       return jsonResponse({ error: "Event not found or not published" }, 404);
     }
@@ -204,10 +199,7 @@ serve(async (request) => {
     }
 
     if (format === "text") {
-      const seasonName = result.event.seasons?.name ?? "Season";
-      const header = `${seasonName} — ${result.event.event_date}\nTonight's draw\n`;
-      const body = result.fixtures.map(fixtureAsTextLine).join("\n");
-      return new Response(`${header}\n${body}\n`, {
+      return new Response(renderText(result.event, result.fixtures), {
         status: 200,
         headers: { ...corsHeaders, "content-type": "text/plain; charset=utf-8" },
       });
