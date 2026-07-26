@@ -12,14 +12,14 @@ import type {
   MatchEventType,
   SportConfig,
 } from "../_shared/score.ts";
-import type { MatchTokenClaims } from "../_shared/match-token.ts";
+import type { MatchAccessContext } from "./guard.ts";
 import type { DecidedBy, FixtureStatus } from "./constants.ts";
 
 export type {
   DerivedScore,
+  MatchAccessContext,
   MatchEvent,
   MatchEventType,
-  MatchTokenClaims,
   SportConfig,
 };
 

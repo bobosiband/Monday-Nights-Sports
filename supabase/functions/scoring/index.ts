@@ -15,10 +15,9 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { handlePreflight } from "../_shared/cors.ts";
-import { verifyMatchToken } from "../_shared/match-token.ts";
+import { verifyMatchToken } from "./guard.ts";
 import {
   badRequest,
-  forbidden,
   methodNotAllowed,
   notFound,
   serverError,
@@ -74,15 +73,11 @@ serve(async (request) => {
   if (!isUuid(route.fixtureId)) return badRequest("Invalid fixture id");
   if (!isScoringAction(route.action)) return notFound("Unknown action");
 
-  const claims = await verifyMatchToken(request);
-  if (claims instanceof Response) return claims;
-  // Guard proves the caller holds a validly-signed, unrevoked, unexpired
-  // token — but not that it targets the fixture named in the URL. That
-  // cross-check happens here: reject when someone tries to use a token
-  // issued for fixture A to write against fixture B.
-  if (claims.fixture_id !== route.fixtureId) {
-    return forbidden("Token does not match fixture");
-  }
+  // The guard both authenticates the caller and enforces the fixture-scope
+  // check — reject when a code minted for fixture A is used against
+  // fixture B (403).
+  const access = await verifyMatchToken(request, route.fixtureId);
+  if (access instanceof Response) return access;
 
   try {
     const supabase = client();
@@ -91,15 +86,15 @@ serve(async (request) => {
 
     switch (route.action) {
       case "start":
-        return await handleStart(request, fixture);
+        return await handleStart(request, fixture, access);
       case "events":
-        return await handleRecordEvent(request, fixture);
+        return await handleRecordEvent(request, fixture, access);
       case "undo":
-        return await handleUndo(request, fixture);
+        return await handleUndo(request, fixture, access);
       case "period":
-        return await handlePeriod(request, fixture);
+        return await handlePeriod(request, fixture, access);
       case "finalize":
-        return await handleFinalize(request, fixture);
+        return await handleFinalize(request, fixture, access);
     }
   } catch (error) {
     console.error("scoring error:", error);

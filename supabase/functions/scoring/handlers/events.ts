@@ -23,9 +23,11 @@ import {
   updateFixtureStatus,
 } from "../db.ts";
 import { deriveScore } from "../../_shared/score.ts";
+import { writeLiveState } from "../derive.ts";
 import { validateRecordBody } from "../validate-event.ts";
 import type {
   FixtureContext,
+  MatchAccessContext,
   RecordEventBody,
   RecordEventResponse,
 } from "../types.ts";
@@ -36,12 +38,15 @@ import type {
  * @param request - The incoming request; JSON body validated against
  *                  `RecordEventBody`.
  * @param fixture - The pre-loaded fixture context.
+ * @param _access - Verified match-access context; unused today but passed
+ *                  in for future operator attribution on match_events.
  * @returns `RecordEventResponse` on success, 400 on validation failure,
  *          409 when the fixture is complete/cancelled.
  */
 export async function handleRecordEvent(
   request: Request,
   fixture: FixtureContext,
+  _access: MatchAccessContext,
 ): Promise<Response> {
   if (
     fixture.status === FIXTURE_STATUS.complete ||
@@ -71,7 +76,9 @@ export async function handleRecordEvent(
     period: parsed.value.period,
     match_clock_ms: parsed.value.match_clock_ms,
     voided_at: null,
-    // TODO(Sprint C): populate from token claims once the guard is real.
+    // TODO: `created_by` references auth.users; sideline operators have no
+    // auth user, so leave null until we add an `operator_access_id` column
+    // that can carry `_access.access_id` instead.
     created_by: null,
   });
 
@@ -90,6 +97,18 @@ export async function handleRecordEvent(
     fixture.away_team_id,
     config,
   );
+
+  // Mirror the derived score into fixture_live_state so realtime viewers
+  // see the update in the same tick as the response. Non-fatal per the
+  // projection contract in derive.ts.
+  let lastEventAt: string | null = null;
+  for (let i = events.length - 1; i >= 0; i--) {
+    if (events[i].voided_at === null) {
+      lastEventAt = events[i].created_at;
+      break;
+    }
+  }
+  await writeLiveState(supabase, fixture.id, derived, nextStatus, lastEventAt);
 
   const responseBody: RecordEventResponse = {
     fixture_id: fixture.id,

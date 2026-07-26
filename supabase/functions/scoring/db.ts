@@ -207,6 +207,32 @@ export async function updateFixtureStatus(
 }
 
 /**
+ * Upsert the fixture_live_state projection row. One row per fixture.
+ * `on conflict (fixture_id)` handles both the first write and subsequent
+ * updates; the caller doesn't need to know which one it is.
+ *
+ * @param supabase - The Supabase client.
+ * @param row - The projection payload built from a DerivedScore.
+ */
+export async function upsertLiveState(
+  supabase: SupabaseClient,
+  row: {
+    fixture_id: string;
+    home_score: number;
+    away_score: number;
+    fouls: Record<string, number>;
+    current_period: number | null;
+    status: FixtureStatus;
+    last_event_at: string | null;
+  },
+): Promise<void> {
+  const { error } = await supabase
+    .from("fixture_live_state")
+    .upsert(row, { onConflict: "fixture_id" });
+  if (error) throw error;
+}
+
+/**
  * Upsert the results row for a fixture. `unique(fixture_id)` on `results`
  * guarantees at most one row per fixture — an organiser correction is an
  * update, never a second row.
