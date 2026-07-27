@@ -12,9 +12,16 @@ import type {
   MatchEventType,
   SportConfig,
 } from "../_shared/score.ts";
+import type { MatchAccessContext } from "./guard.ts";
 import type { DecidedBy, FixtureStatus } from "./constants.ts";
 
-export type { DerivedScore, MatchEvent, MatchEventType, SportConfig };
+export type {
+  DerivedScore,
+  MatchAccessContext,
+  MatchEvent,
+  MatchEventType,
+  SportConfig,
+};
 
 /**
  * Parsed URL context resolved by the router. Passed through the guard into
@@ -23,15 +30,6 @@ export type { DerivedScore, MatchEvent, MatchEventType, SportConfig };
 export interface RouteContext {
   fixtureId: string;
   action: string;
-}
-
-/**
- * Claims returned by the token guard. Sprint 1 uses a dev-mode pass-through
- * that just echoes the URL's fixture id back; Sprint C replaces this with a
- * real signed-token or DB-lookup verification.
- */
-export interface MatchTokenClaims {
-  fixture_id: string;
 }
 
 /**

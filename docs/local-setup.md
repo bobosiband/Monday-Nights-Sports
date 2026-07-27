@@ -171,7 +171,7 @@ Once Docker is running and the CLI is on PATH, from the repo root:
 
 ```bash
 supabase start        # boots the stack; first run pulls containers (~1–2 min)
-supabase db reset     # applies migrations 0001–0003 + seed.sql
+supabase db reset     # applies migrations 0001–0004 + seed.sql
 supabase status       # prints ANON_KEY / SERVICE_ROLE_KEY / API URLs
 ```
 
@@ -199,19 +199,30 @@ Pure-logic tests — no DB required. Same command on every platform:
 deno test --allow-net supabase/functions/_tests/
 ```
 
-You should see:
+You should see roughly:
 
 ```
-ok | 48 passed | 0 failed
+ok | ~100 passed | 0 failed
 ```
 
-Coverage:
+Coverage (Sprints 1 → Sprint 2 C/D/E):
 
 - `_tests/shared/score.test.ts` — the `deriveScore` fold.
 - `_tests/shared/score-mixed.test.ts` — scores + fouls + cards together.
+- `_tests/shared/match-token.test.ts` — code generator, normalisation, SHA-256 hasher, bearer extractor.
+- `_tests/shared/standings.test.ts` — points / tiebreakers / byes / config permutations.
 - `_tests/scoring/validate-event.test.ts` — request-body validation.
 - `_tests/scoring/period-state.test.ts` — `periodIsOpen` helper.
 - `_tests/scoring/period-breakdown.test.ts` — finalize's period fold.
+- `_tests/scoring/guard.test.ts` — verifyMatchToken: expired / revoked / wrong-fixture / dev-flag.
+- `_tests/fixtures-public/render.test.ts` — LIVE badge and score rendering.
+
+You may need `--allow-env` for the guard tests (they toggle
+`SCORING_DEV_TOKENS`):
+
+```bash
+deno test --allow-net --allow-env supabase/functions/_tests/
+```
 
 Type-check the whole service (no execution):
 
@@ -224,21 +235,49 @@ deno check supabase/functions/scoring/index.ts
 ## Smoke-testing the scoring routes
 
 The seed inserts a soccer fixture (Reds vs Blues) with id
-`f0111111-1111-1111-1111-111111111111`. This walkthrough drives that
-fixture from `scheduled` all the way to `complete`.
+`f0111111-1111-1111-1111-111111111111` **and** a long-lived operator
+match code hashed into `match_access`. The raw code is:
 
-The scoring routes are guarded by a **dev-mode token stub**: any
-`Authorization: Bearer <anything>` header is accepted. Real match-token
-validation lands in Sprint C — until then, use a placeholder string.
+```
+DEVCODE1
+```
 
-### bash / zsh (macOS, Linux, WSL2)
+This walkthrough drives that fixture from `scheduled` to `complete`.
+
+### One-line end-to-end
+
+The full arc (mint → score → live → finalize → standings → revoke →
+confirm 401) has a scripted walkthrough:
+
+```bash
+export ORGANISER_JWT=<your organiser JWT — see docs/sprint-1.md>
+export SUPABASE_ANON_KEY=$(supabase status -o json | jq -r .API.ANON_KEY)
+./scripts/smoke-live.sh
+```
+
+Every step prints PASS / FAIL; the summary line at the bottom is the
+overall verdict.
+
+### Dev escape hatch
+
+If you want to poke around scoring without minting a real code, set
+`SCORING_DEV_TOKENS=true` in the function environment. The guard skips
+the DB lookup and accepts any bearer, logging a loud warning on every
+call. **Off by default and never for production.** See ADR 0002 for
+why the real path is a DB lookup.
+
+```bash
+SCORING_DEV_TOKENS=true supabase functions serve scoring
+```
+
+### Manual walkthrough — bash / zsh (macOS, Linux, WSL2)
 
 ```bash
 FIXTURE=f0111111-1111-1111-1111-111111111111
 HOME=a1111111-1111-1111-1111-111111111111   # Reds
 AWAY=a2222222-2222-2222-2222-222222222222   # Blues
 BASE=http://127.0.0.1:54321/functions/v1/scoring/$FIXTURE
-AUTH='authorization: Bearer dev-token'
+AUTH='authorization: Bearer DEVCODE1'
 
 # Cross-platform UUID generator — pick the one that works:
 uuid() { uuidgen 2>/dev/null | tr '[:upper:]' '[:lower:]' \
@@ -299,7 +338,7 @@ curl -s -X POST -H "$AUTH" -H 'content-type: application/json' \
 $FIXTURE = 'f0111111-1111-1111-1111-111111111111'
 $HOME_TEAM = 'a1111111-1111-1111-1111-111111111111'
 $BASE = "http://127.0.0.1:54321/functions/v1/scoring/$FIXTURE"
-$Headers = @{ Authorization = 'Bearer dev-token' }
+$Headers = @{ Authorization = 'Bearer DEVCODE1' }
 
 # flip live
 Invoke-RestMethod -Method Post -Uri "$BASE/start" -Headers $Headers | ConvertTo-Json -Depth 5
@@ -406,9 +445,12 @@ or edit `supabase/config.toml` to shift the numbers.
 
 ### 401 from every scoring route
 
-The scoring routes require an `Authorization: Bearer <anything>` header
-even in dev-mode. Missing header → 401. PowerShell users: make sure
-you're passing `-Headers @{ Authorization = 'Bearer dev-token' }`.
+Since Sprint 2 the scoring guard hashes the bearer and looks it up in
+`match_access`. Either mint a real code (`POST /match-access`) or use
+the seeded dev code `DEVCODE1` — anything else 401s. If you want the
+old pass-through behaviour temporarily, export
+`SCORING_DEV_TOKENS=true` before serving the function; the guard will
+warn on every request. **Never set that in production.**
 
 ### 500 from a scoring route, no obvious body
 
@@ -448,9 +490,10 @@ When the stack is up, an interactive Swagger UI is served by the
 - Raw spec: <http://127.0.0.1:54321/functions/v1/api-docs/openapi.yaml>
 
 Every route on the backend (fixtures-public, seasons, teams, scoring,
-match-access, standings) is documented there, including request/response
-schemas and the two auth schemes (`organiserBearer`, `matchToken`). Use
-the "Try it out" button to hit routes directly from the browser.
+match-access, sport-configs, live, standings, results-public) is
+documented there, including request/response schemas and the two auth
+schemes (`organiserBearer`, `matchToken`). Use the "Try it out" button
+to hit routes directly from the browser.
 
 **Editing the spec:** the source of truth lives at
 [`docs/openapi.yaml`](openapi.yaml). After you edit it, run:
@@ -471,3 +514,8 @@ release.
   live spec for the scoring/viewing backend (Sprints A–E).
 - [`sprint-1.md`](sprint-1.md) — how the Sprint 1 services
   (fixtures-public, seasons, teams) work and how to exercise them.
+- [`sprint-2.md`](sprint-2.md) — the operator access + live viewing +
+  standings + archive chunk (Sprints C/D/E).
+- [`realtime.md`](realtime.md) — client-side protocol for the
+  `fixture_live_state` realtime channel.
+- [`decisions/`](decisions/) — the ADRs behind Sprint 2's design.

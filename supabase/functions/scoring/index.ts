@@ -15,14 +15,13 @@
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { handlePreflight } from "../_shared/cors.ts";
+import { verifyMatchToken } from "./guard.ts";
 import {
   badRequest,
-  forbidden,
   methodNotAllowed,
   notFound,
   serverError,
 } from "./errors.ts";
-import { verifyMatchToken } from "./guard.ts";
 import { client, loadFixtureContext } from "./db.ts";
 import { handleStart } from "./handlers/start.ts";
 import { handleRecordEvent } from "./handlers/events.ts";
@@ -37,10 +36,16 @@ import { isUuid } from "../_shared/validate.ts";
  * the `scoring` segment matches the pattern used elsewhere in this repo so
  * mount-point differences between the platform and local dev don't matter.
  *
+ * A bare `POST /scoring/:fixtureId` (no action segment) intentionally
+ * returns 404: every scoring intent has a named action, so there is no
+ * meaningful default. The `parts.length < idx + 3` check enforces this.
+ *
  * @param request - The incoming request.
  * @returns `{ fixtureId, action }` or `null` if the path doesn't match.
  */
-function parseRoute(request: Request): { fixtureId: string; action: string } | null {
+function parseRoute(
+  request: Request,
+): { fixtureId: string; action: string } | null {
   const parts = new URL(request.url).pathname.split("/").filter(Boolean);
   const idx = parts.lastIndexOf("scoring");
   if (idx < 0 || parts.length < idx + 3) return null;
@@ -68,11 +73,11 @@ serve(async (request) => {
   if (!isUuid(route.fixtureId)) return badRequest("Invalid fixture id");
   if (!isScoringAction(route.action)) return notFound("Unknown action");
 
-  const claims = verifyMatchToken(request, route.fixtureId);
-  if (claims instanceof Response) return claims;
-  if (claims.fixture_id !== route.fixtureId) {
-    return forbidden("Token does not match fixture");
-  }
+  // The guard both authenticates the caller and enforces the fixture-scope
+  // check — reject when a code minted for fixture A is used against
+  // fixture B (403).
+  const access = await verifyMatchToken(request, route.fixtureId);
+  if (access instanceof Response) return access;
 
   try {
     const supabase = client();
@@ -81,15 +86,15 @@ serve(async (request) => {
 
     switch (route.action) {
       case "start":
-        return await handleStart(request, fixture);
+        return await handleStart(request, fixture, access);
       case "events":
-        return await handleRecordEvent(request, fixture);
+        return await handleRecordEvent(request, fixture, access);
       case "undo":
-        return await handleUndo(request, fixture);
+        return await handleUndo(request, fixture, access);
       case "period":
-        return await handlePeriod(request, fixture);
+        return await handlePeriod(request, fixture, access);
       case "finalize":
-        return await handleFinalize(request, fixture);
+        return await handleFinalize(request, fixture, access);
     }
   } catch (error) {
     console.error("scoring error:", error);

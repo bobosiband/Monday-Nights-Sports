@@ -11,7 +11,7 @@ import { conflict } from "../errors.ts";
 import { FIXTURE_STATUS, type FixtureStatus } from "../constants.ts";
 import { client, updateFixtureStatus } from "../db.ts";
 import { respondDerived } from "../derive.ts";
-import type { FixtureContext } from "../types.ts";
+import type { FixtureContext, MatchAccessContext } from "../types.ts";
 
 /**
  * Handle the explicit `start` action. Recording the first event on a
@@ -22,11 +22,14 @@ import type { FixtureContext } from "../types.ts";
  *
  * @param _request - The incoming request; body is not read.
  * @param fixture - The pre-loaded fixture context.
+ * @param _access - Verified match-access context; unused today but passed
+ *                  in for future operator attribution.
  * @returns A `DerivedResponse` reflecting the (possibly updated) status.
  */
 export async function handleStart(
   _request: Request,
   fixture: FixtureContext,
+  _access: MatchAccessContext,
 ): Promise<Response> {
   const supabase = client();
 

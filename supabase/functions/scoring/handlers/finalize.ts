@@ -21,11 +21,13 @@ import {
   upsertResult,
 } from "../db.ts";
 import { deriveScore } from "../../_shared/score.ts";
+import { writeLiveState } from "../derive.ts";
 import { buildPeriodBreakdown } from "../period-breakdown.ts";
 import type {
   FinalizeBody,
   FinalizeResponse,
   FixtureContext,
+  MatchAccessContext,
 } from "../types.ts";
 
 /**
@@ -37,12 +39,15 @@ import type {
  * @param request - The incoming request; JSON body: `FinalizeBody`
  *                  (optional).
  * @param fixture - The pre-loaded fixture context.
+ * @param _access - Verified match-access context; unused today but passed
+ *                  in for future operator attribution on results.
  * @returns `FinalizeResponse` on success; 400 on bad body; 409 when the
  *          fixture is already complete without reopen, or cancelled.
  */
 export async function handleFinalize(
   request: Request,
   fixture: FixtureContext,
+  _access: MatchAccessContext,
 ): Promise<Response> {
   const body = await readJson<FinalizeBody>(request);
   const decidedBy = resolveDecidedBy(body?.decided_by);
@@ -80,7 +85,8 @@ export async function handleFinalize(
 
   // Persist the snapshot before flipping status so a race that observes
   // "complete" without a results row is impossible.
-  // TODO(Sprint C): pass token subject once the guard populates it.
+  // TODO: attribute `confirmed_by` to `_access.access_id` once results has
+  // an `operator_access_id` column (confirmed_by references auth.users).
   await upsertResult(
     supabase,
     fixture.id,
@@ -91,6 +97,24 @@ export async function handleFinalize(
     null,
   );
   await updateFixtureStatus(supabase, fixture.id, FIXTURE_STATUS.complete);
+
+  // Mirror the snapshot into fixture_live_state so viewers (subscribed to
+  // that table over Realtime) transition to `complete` in the same tick.
+  // Non-fatal per the projection contract in derive.ts.
+  let lastEventAt: string | null = null;
+  for (let i = events.length - 1; i >= 0; i--) {
+    if (events[i].voided_at === null) {
+      lastEventAt = events[i].created_at;
+      break;
+    }
+  }
+  await writeLiveState(
+    supabase,
+    fixture.id,
+    derived,
+    FIXTURE_STATUS.complete,
+    lastEventAt,
+  );
 
   const responseBody: FinalizeResponse = {
     fixture_id: fixture.id,

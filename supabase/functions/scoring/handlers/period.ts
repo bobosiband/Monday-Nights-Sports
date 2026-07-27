@@ -16,7 +16,11 @@ import {
 } from "../db.ts";
 import { respondDerived } from "../derive.ts";
 import { periodIsOpen } from "../period-state.ts";
-import type { FixtureContext, PeriodBody } from "../types.ts";
+import type {
+  FixtureContext,
+  MatchAccessContext,
+  PeriodBody,
+} from "../types.ts";
 
 type PeriodIntent = "start" | "end";
 
@@ -34,12 +38,15 @@ type PeriodIntent = "start" | "end";
  *
  * @param request - The incoming request; JSON body: `PeriodBody`.
  * @param fixture - The pre-loaded fixture context.
+ * @param _access - Verified match-access context; unused today but passed
+ *                  in for future operator attribution.
  * @returns The derived summary on success; 400 on bad body; 409 when the
  *          intent contradicts current state.
  */
 export async function handlePeriod(
   request: Request,
   fixture: FixtureContext,
+  _access: MatchAccessContext,
 ): Promise<Response> {
   if (
     fixture.status === FIXTURE_STATUS.complete ||
@@ -86,7 +93,8 @@ export async function handlePeriod(
     period,
     match_clock_ms: clock,
     voided_at: null,
-    // TODO(Sprint C): populate from token claims.
+    // TODO: attribute to `_access.access_id` once match_events grows an
+    // `operator_access_id` column (created_by references auth.users today).
     created_by: null,
   });
 

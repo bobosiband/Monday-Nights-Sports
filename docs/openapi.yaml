@@ -1,16 +1,19 @@
 openapi: 3.1.0
 info:
   title: Monday Night Sports — Backend API
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Supabase Edge Functions backing Monday Night Sports.
 
-    - Public reads: `fixtures-public`, `standings`.
-    - Organiser writes (Supabase Auth JWT): `seasons`, `teams`, `match-access`.
-    - Scoped scoring writes (match-token — dev stub in Sprint B):
-      `scoring/:fixtureId/*`.
+    - Public reads: `fixtures-public`, `live`, `results-public`, `standings`.
+    - Organiser writes (Supabase Auth JWT): `seasons`, `teams`,
+      `match-access`, `sport-configs`.
+    - Scoped scoring writes (operator match code): `scoring/:fixtureId/*`.
 
     Base path for every function is `/functions/v1/<function-name>`.
+
+    Realtime subscription details for live scores live in
+    `docs/realtime.md`.
   contact:
     name: Monday Night Sports (COSA)
   license:
@@ -33,12 +36,18 @@ tags:
     description: Organiser season management
   - name: teams
     description: Organiser team management
+  - name: sport-configs
+    description: Organiser sport-config CRUD
   - name: scoring
-    description: Live scoring writes (match-token gated)
+    description: Live scoring writes (match-code gated)
   - name: match-access
-    description: Mint and revoke scoped match tokens (organiser)
+    description: Mint and revoke scoped operator match codes (organiser)
+  - name: live
+    description: Public live-score endpoint
   - name: standings
-    description: Public standings
+    description: Public standings, grouped by sport
+  - name: results-public
+    description: Public archive of past events + results
   - name: docs
     description: Interactive API documentation
 
@@ -57,14 +66,17 @@ paths:
         Renders a single event's draw as HTML (default), plain text
         (`format=text`) or JSON (`format=json`). RLS gates the underlying
         tables — unpublished events return 404.
+
+        Sprint C addition: the response surfaces `fixtures.status`
+        (scheduled / live / complete / cancelled) and, for live and
+        complete fixtures, the current score (from `fixture_live_state`
+        or `results`).
       security: []
       parameters:
         - name: event
           in: query
           required: true
-          schema:
-            type: string
-            format: uuid
+          schema: { type: string, format: uuid }
         - name: format
           in: query
           required: false
@@ -294,7 +306,84 @@ paths:
         '400': { $ref: '#/components/responses/BadRequest' }
 
   # ----------------------------------------------------------------
-  # scoring — match-token gated (Sprint B; guard is a dev stub)
+  # sport-configs
+  # ----------------------------------------------------------------
+  /sport-configs:
+    get:
+      tags: [sport-configs]
+      summary: List sport configs for a season
+      parameters:
+        - name: season
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sport_configs:
+                    type: array
+                    items: { $ref: '#/components/schemas/SportConfigRow' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+    post:
+      tags: [sport-configs]
+      summary: Upsert a sport config on (season_id, sport)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpsertSportConfigBody' }
+      responses:
+        '201':
+          description: Created (or updated)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sport_config: { $ref: '#/components/schemas/SportConfigRow' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+
+  /sport-configs/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UuidPath'
+    patch:
+      tags: [sport-configs]
+      summary: Partial update of a sport config
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sport: { type: string }
+                config: { $ref: '#/components/schemas/SportConfig' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sport_config: { $ref: '#/components/schemas/SportConfigRow' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    delete:
+      tags: [sport-configs]
+      summary: Delete a sport config
+      responses:
+        '200': { description: OK }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ----------------------------------------------------------------
+  # scoring — match-code gated
   # ----------------------------------------------------------------
   /scoring/{fixtureId}/start:
     parameters:
@@ -326,7 +415,7 @@ paths:
         `insert ... on conflict (id) do nothing`. Response echoes the
         `inserted` flag so an optimistic client can distinguish a
         genuine write from a replay. Also flips `fixtures.status='live'`
-        on the first accepted event.
+        on the first accepted event and upserts `fixture_live_state`.
       requestBody:
         required: true
         content:
@@ -445,38 +534,17 @@ paths:
           description: Fixture already complete without reopen=true, or cancelled.
 
   # ----------------------------------------------------------------
-  # match-access — Sprint C stub (mint/revoke)
+  # match-access — mint / revoke / list operator codes
   # ----------------------------------------------------------------
   /match-access:
-    post:
-      tags: [match-access]
-      summary: Mint a scoped match token
-      description: Skeleton — real implementation in story #37. Returns 501 for now.
-      responses:
-        '501': { description: Not implemented }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  /match-access/{id}/revoke:
-    parameters:
-      - $ref: '#/components/parameters/UuidPath'
-    post:
-      tags: [match-access]
-      summary: Revoke a minted match token
-      responses:
-        '501': { description: Not implemented }
-        '401': { $ref: '#/components/responses/Unauthorized' }
-
-  # ----------------------------------------------------------------
-  # standings — Sprint E stub
-  # ----------------------------------------------------------------
-  /standings:
     get:
-      tags: [standings]
-      security: []
-      summary: Public standings for a season, grouped by sport
-      description: Skeleton — real computation in story #43/#44.
+      tags: [match-access]
+      summary: List operator codes for a fixture
+      description: |
+        Never returns the raw code or its hash — only metadata plus a
+        derived `active` boolean.
       parameters:
-        - name: season
+        - name: fixture
           in: query
           required: true
           schema: { type: string, format: uuid }
@@ -488,13 +556,230 @@ paths:
               schema:
                 type: object
                 properties:
-                  season: { type: string, format: uuid }
-                  standings_by_sport:
-                    type: object
-                    additionalProperties:
-                      type: array
-                      items: { $ref: '#/components/schemas/StandingsRow' }
+                  codes:
+                    type: array
+                    items: { $ref: '#/components/schemas/MatchAccessRow' }
         '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [match-access]
+      summary: Mint a scoped operator match code
+      description: |
+        The raw `code` is returned **exactly once** in this response and
+        NEVER again. Store it somewhere the operator can copy immediately
+        (an on-screen modal, an SMS, etc.). The DB keeps only its SHA-256
+        hash.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fixture_id]
+              properties:
+                fixture_id: { type: string, format: uuid }
+                ttl_minutes:
+                  type: integer
+                  minimum: 15
+                  maximum: 720
+                  default: 240
+                label:
+                  type: string
+                  maxLength: 80
+                  description: Free-form hint (e.g. "Sam, sideline")
+      responses:
+        '201':
+          description: Created — code emitted once, never again.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [id, fixture_id, code, expires_at]
+                properties:
+                  id: { type: string, format: uuid }
+                  fixture_id: { type: string, format: uuid }
+                  code:
+                    type: string
+                    description: 8-character bearer secret. Return to caller once.
+                  expires_at: { type: string, format: date-time }
+                  label: { type: string, nullable: true }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409':
+          description: Fixture is complete or cancelled.
+
+  /match-access/{id}/revoke:
+    parameters:
+      - $ref: '#/components/parameters/UuidPath'
+    post:
+      tags: [match-access]
+      summary: Revoke an operator code (idempotent)
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  revoked_at: { type: string, format: date-time }
+                  already_revoked: { type: boolean }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ----------------------------------------------------------------
+  # live
+  # ----------------------------------------------------------------
+  /live/{fixtureId}:
+    parameters:
+      - $ref: '#/components/parameters/FixtureIdPath'
+    get:
+      tags: [live]
+      security: []
+      summary: Current live summary for one fixture
+      description: |
+        Reads `fixture_live_state`. When no projection row exists yet
+        (fixture never scored), synthesises a zero-scored summary from
+        the fixture row. Response includes a `realtime` object with the
+        subscription parameters for the Supabase Realtime channel — see
+        `docs/realtime.md` for the client-side protocol.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LiveSummary' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  /live:
+    get:
+      tags: [live]
+      security: []
+      summary: Live summaries for every fixture in a published event
+      parameters:
+        - name: event
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event: { type: string, format: uuid }
+                  fixtures:
+                    type: array
+                    items: { $ref: '#/components/schemas/LiveSummary' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ----------------------------------------------------------------
+  # standings
+  # ----------------------------------------------------------------
+  /standings:
+    get:
+      tags: [standings]
+      security: []
+      summary: Public standings for a season, grouped by sport
+      parameters:
+        - name: season
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+        - name: sport
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      season: { type: string, format: uuid }
+                      standings_by_sport:
+                        type: object
+                        additionalProperties:
+                          type: array
+                          items: { $ref: '#/components/schemas/StandingsRow' }
+                  - type: object
+                    properties:
+                      season: { type: string, format: uuid }
+                      sport: { type: string }
+                      standings:
+                        type: array
+                        items: { $ref: '#/components/schemas/StandingsRow' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ----------------------------------------------------------------
+  # results-public
+  # ----------------------------------------------------------------
+  /results-public:
+    get:
+      tags: [results-public]
+      security: []
+      summary: Archive of past events + results
+      description: |
+        Two shapes:
+          - `?season=<uuid>[&limit=][&before=YYYY-MM-DD]` — paginated
+            list, newest-first. `next_before` in the response is the
+            cursor to pass on the next call, or null if this is the
+            last page.
+          - `?event=<uuid>` — one event's results.
+      parameters:
+        - name: season
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: event
+          in: query
+          required: false
+          schema: { type: string, format: uuid }
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 10
+        - name: before
+          in: query
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - type: object
+                    properties:
+                      season: { type: string, format: uuid }
+                      events:
+                        type: array
+                        items: { $ref: '#/components/schemas/ArchivedEvent' }
+                      next_before:
+                        type: string
+                        format: date
+                        nullable: true
+                  - type: object
+                    properties:
+                      event: { $ref: '#/components/schemas/ArchivedEvent' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
 
   # ----------------------------------------------------------------
   # api-docs
@@ -528,14 +813,18 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Supabase Auth JWT for organiser writes (seasons, teams, match-access).
+      description: |
+        Supabase Auth JWT for organiser writes (seasons, teams,
+        match-access, sport-configs).
     matchToken:
       type: http
       scheme: bearer
       description: |
-        Scoped match token — Sprint B is a dev-mode pass-through that
-        accepts any non-empty bearer string. Sprint C (story #38)
-        replaces this with a real signed JWT or `match_access` lookup.
+        Operator match code. Bearer value is the 8-character opaque code
+        returned by `POST /match-access` (case-insensitive; dashes /
+        whitespace are stripped). The server hashes and looks it up in
+        `match_access`; missing / expired / revoked codes 401, and a
+        valid code minted for a different fixture 403s. See ADR 0002.
 
   parameters:
     UuidPath:
@@ -656,23 +945,22 @@ components:
         status:
           type: string
           enum: [scheduled, live, complete, cancelled]
-        slots:
+        slot:
           type: object
           nullable: true
           properties:
             slot_number: { type: integer }
             starts_at: { type: string }
             pitch: { type: string, nullable: true }
-        home_team:
+        home_team_name: { type: string, nullable: true }
+        away_team_name: { type: string, nullable: true }
+        score:
           type: object
           nullable: true
+          description: Present for `live` / `complete` fixtures only.
           properties:
-            name: { type: string }
-        away_team:
-          type: object
-          nullable: true
-          properties:
-            name: { type: string }
+            home: { type: integer, minimum: 0 }
+            away: { type: integer, minimum: 0 }
 
     RecordEventBody:
       type: object
@@ -771,7 +1059,127 @@ components:
         won: { type: integer }
         drawn: { type: integer }
         lost: { type: integer }
-        goals_for: { type: integer }
-        goals_against: { type: integer }
+        for: { type: integer }
+        against: { type: integer }
         goal_diff: { type: integer }
         points: { type: integer }
+
+    SportConfig:
+      type: object
+      description: Free-form sport configuration.
+      properties:
+        periods:
+          type: object
+          properties:
+            count: { type: integer, minimum: 1 }
+            minutes: { type: integer, minimum: 1 }
+            direction: { type: string, enum: [up, down] }
+        score_increments:
+          type: array
+          items: { type: integer, minimum: 1 }
+          minItems: 1
+        track_fouls: { type: boolean }
+        standings:
+          type: object
+          properties:
+            points:
+              type: object
+              properties:
+                win: { type: integer, minimum: 0 }
+                draw: { type: integer, minimum: 0 }
+                loss: { type: integer, minimum: 0 }
+            tiebreakers:
+              type: array
+              items: { type: string }
+
+    SportConfigRow:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        season_id: { type: string, format: uuid }
+        sport: { type: string }
+        config: { $ref: '#/components/schemas/SportConfig' }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    UpsertSportConfigBody:
+      type: object
+      required: [season_id, sport, config]
+      properties:
+        season_id: { type: string, format: uuid }
+        sport: { type: string }
+        config: { $ref: '#/components/schemas/SportConfig' }
+
+    MatchAccessRow:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        fixture_id: { type: string, format: uuid }
+        label: { type: string, nullable: true }
+        expires_at: { type: string, format: date-time }
+        revoked_at: { type: string, format: date-time, nullable: true }
+        last_used_at: { type: string, format: date-time, nullable: true }
+        active: { type: boolean }
+
+    LiveSummary:
+      type: object
+      required: [fixture_id, sport, status, home, fouls, current_period, last_event_at, realtime]
+      properties:
+        fixture_id: { type: string, format: uuid }
+        sport: { type: string }
+        status:
+          type: string
+          enum: [scheduled, live, complete, cancelled]
+        home:
+          type: object
+          properties:
+            team_id: { type: string, format: uuid }
+            name: { type: string }
+            score: { type: integer, minimum: 0 }
+        away:
+          type: object
+          nullable: true
+          properties:
+            team_id: { type: string, format: uuid }
+            name: { type: string }
+            score: { type: integer, minimum: 0 }
+        fouls:
+          type: object
+          additionalProperties: { type: integer, minimum: 0 }
+        current_period:
+          type: integer
+          nullable: true
+        last_event_at:
+          type: string
+          format: date-time
+          nullable: true
+        realtime:
+          type: object
+          required: [channel, table, filter]
+          properties:
+            channel: { type: string }
+            table: { type: string }
+            filter: { type: string }
+
+    ArchivedEvent:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        event_date: { type: string, format: date }
+        season_name: { type: string, nullable: true }
+        fixtures:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: string, format: uuid }
+              sport: { type: string }
+              home_team_name: { type: string, nullable: true }
+              away_team_name: { type: string, nullable: true }
+              home_score: { type: integer }
+              away_score: { type: integer }
+              periods:
+                type: array
+                items: { $ref: '#/components/schemas/PeriodBreakdown' }
+              decided_by: { type: string }
+              confirmed_at: { type: string, format: date-time }

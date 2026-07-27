@@ -24,19 +24,45 @@ here is a self-contained API/service they can consume.
 ```
 monday-night-sports/
 ├── docs/
-│   └── sprint-1.md                     # running log — what shipped, how to run it
+│   ├── overview.md                     # start here — what this system does
+│   ├── scoring-viewing-backend-plan.md # live design doc for the scoring stack
+│   ├── local-setup.md                  # everything you need to run it locally
+│   ├── realtime.md                     # Supabase Realtime client protocol
+│   ├── openapi.yaml                    # source-of-truth API spec (Swagger UI)
+│   ├── sprint-1.md                     # Sprint 1 running log
+│   ├── sprint-2.md                     # Sprint 2 (C/D/E) running log
+│   └── decisions/                      # ADRs (0001-0005)
+├── scripts/
+│   ├── smoke-live.sh                   # end-to-end smoke walkthrough
+│   ├── rebuild-live-state.sql          # rebuild the realtime projection
+│   ├── sync-openapi.sh                 # embed openapi.yaml into api-docs
+│   └── regenerate-tracking.sh          # regenerate GitHub milestones/stories
 └── supabase/
     ├── config.toml                     # local dev config (safe to commit)
     ├── migrations/
-    │   └── 0001_core_schema.sql
-    ├── seed.sql                        # demo season for local dev
+    │   ├── 0001_core_schema.sql
+    │   ├── 0002_scoring_core.sql
+    │   ├── 0003_grants.sql
+    │   └── 0004_operator_access_and_live.sql
+    ├── seed.sql                        # demo season + dev operator code
     └── functions/
         ├── _shared/                    # not deployed as a function
         │   ├── auth.ts                 # organiser JWT guard
         │   ├── cors.ts                 # CORS helpers
-        │   └── supabase-client.ts      # service-role client factory
-        ├── fixtures-public/            # public draw delivery (HTML / text / JSON)
+        │   ├── match-token.ts          # opaque operator-code primitive
+        │   ├── score.ts                # pure score-derivation fold
+        │   ├── standings.ts            # pure standings computation
+        │   ├── supabase-client.ts      # service-role client factory
+        │   └── validate.ts             # shared input validators
+        ├── api-docs/                   # Swagger UI + embedded OpenAPI
+        ├── fixtures-public/            # public draw (HTML / text / JSON, LIVE badge)
+        ├── live/                       # public live-score endpoint
+        ├── match-access/               # organiser: mint / revoke operator codes
+        ├── results-public/             # public archive of past events
+        ├── scoring/                    # match-code-guarded scoring writes
         ├── seasons/                    # organiser: season management
+        ├── sport-configs/              # organiser: per-sport config CRUD
+        ├── standings/                  # public standings (per season, per sport)
         └── teams/                      # organiser: team management
 ```
 
@@ -59,26 +85,50 @@ supabase db reset
 supabase functions serve
 ```
 
-Environment variables the functions read (auto-injected by the platform, only
-needed manually if you run functions outside `supabase functions serve`):
+Environment variables the functions read:
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
+| Var | Purpose | Auto-set by CLI? |
+|---|---|---|
+| `SUPABASE_URL` | Postgres + Auth base URL | ✅ yes |
+| `SUPABASE_SERVICE_ROLE_KEY` | Bypass-RLS DB client used by every Edge Function | ✅ yes |
+| `SCORING_DEV_TOKENS` | When `"true"`, the scoring guard skips DB verification and accepts any bearer (with a loud console warning). Off by default. Only for local exploration — never set in production. | ❌ optional |
+
+Match codes are opaque hashed values in the `match_access` table
+(see [`docs/decisions/0002-operator-access-model-v2.md`](docs/decisions/0002-operator-access-model-v2.md)),
+so there is no shared secret to configure. Every code lives in the DB
+and can be revoked instantly.
 
 ## Deploying
 
 ```bash
 supabase link --project-ref <your-project-ref>
 supabase db push
+
+# Public reads
 supabase functions deploy fixtures-public
+supabase functions deploy live
+supabase functions deploy standings
+supabase functions deploy results-public
+
+# Organiser writes (Supabase Auth JWT)
 supabase functions deploy seasons
 supabase functions deploy teams
+supabase functions deploy sport-configs
+supabase functions deploy match-access
+
+# Match-code-gated scoring
+supabase functions deploy scoring
+
+# Interactive docs (Swagger UI)
+./scripts/sync-openapi.sh
+supabase functions deploy api-docs
 ```
 
 ## Sprint status
 
-See [`docs/sprint-1.md`](docs/sprint-1.md) for what ships in Sprint 1 and how
-to exercise each service.
+- Sprint 1 (foundation): [`docs/sprint-1.md`](docs/sprint-1.md).
+- Sprint 2 (operator access, live viewing, standings & archive):
+  [`docs/sprint-2.md`](docs/sprint-2.md).
 
 ## Licence
 
