@@ -87,11 +87,11 @@ here is a self-contained API.
 - **Shipped (Sprint 1):** core database (seasons, teams, events, slots, fixtures,
   results) with public-read-on-published security; organiser sign-in; season and
   team management services; the public fixtures service.
-- **Shipped (Sprint 2, C/D/E):** operator match-code mint/revoke; real match-code
+- **Shipped (Sprints C/D/E):** operator match-code mint/revoke; real match-code
   verification in scoring; `fixture_live_state` realtime projection; public
   `live` endpoint; LIVE badge in `fixtures-public`; `standings` and
   `results-public` archive; organiser `sport-configs` CRUD.
-  See [`sprint-2.md`](sprint-2.md) for the running log and
+  See [`sprints-c-d-e.md`](sprints-c-d-e.md) for the running log and
   [`decisions/`](decisions/) for the ADRs.
 - **Building next:** the organiser **draw builder** — an `events` service that
   actually lets an organiser create an event, its slots, its fixtures, and

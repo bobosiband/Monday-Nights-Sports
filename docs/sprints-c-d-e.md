@@ -1,7 +1,7 @@
-# Sprint 2 — Operator access, live viewing, standings & archive
+# Sprints C, D & E — Operator access, live viewing, standings & archive
 
-Running log for the Sprints C/D/E chunk. Every row maps roughly to a
-commit; the "how to exercise" section at the end walks the full arc.
+Running log for the C/D/E chunk. Every row maps roughly to a commit;
+the "how to exercise" section at the end walks the full arc.
 
 > New here? Start at [`overview.md`](overview.md), then read
 > [`scoring-viewing-backend-plan.md`](scoring-viewing-backend-plan.md).
@@ -29,7 +29,7 @@ watches live → results and standings appear in the archive.
 | T1 | `0004_operator_access_and_live.sql` — `match_access` (hashed) + `fixture_live_state` + RLS + realtime publication + grants + seeded dev code |
 | T2 | `_shared/match-token.ts` — pure code generator / normaliser / SHA-256 hasher / bearer extractor + unit tests |
 | T3 | `match-access` function — mint / revoke (idempotent) / list; raw code returned exactly once |
-| T4 | `scoring/guard.ts` — real hash-lookup verification, 401/403 semantics, `SCORING_DEV_TOKENS` escape hatch, `last_used_at` fire-and-forget update |
+| T4 | `scoring/guard.ts` — real hash-lookup verification, 401/403 semantics, `last_used_at` fire-and-forget update |
 | T5 | Realtime projection writes — every scoring intent upserts `fixture_live_state`; non-fatal, plus `scripts/rebuild-live-state.sql` |
 | T6 | `live` function — `GET /live/:id` and `GET /live?event=`; fixture-only fallback; realtime hints in payload; `docs/realtime.md` protocol doc |
 | T7 | LIVE badge in `fixtures-public` — HTML / text / JSON all surface `status` and current score; pure renderers with unit tests |
@@ -140,7 +140,7 @@ Coverage added in this sprint:
 
 - `_tests/shared/match-token.test.ts` — code generator, normaliser, hasher, bearer extractor.
 - `_tests/shared/standings.test.ts` — points / tiebreakers / byes / unknown-tiebreaker robustness.
-- `_tests/scoring/guard.test.ts` — 401 / 403 flows + `SCORING_DEV_TOKENS` escape hatch.
+- `_tests/scoring/guard.test.ts` — 401 / 403 flows on the real hash lookup.
 - `_tests/fixtures-public/render.test.ts` — LIVE badge + score rendering across HTML / text / JSON.
 
 Existing Sprint 1/B tests still pass.
