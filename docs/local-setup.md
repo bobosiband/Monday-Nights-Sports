@@ -205,7 +205,7 @@ You should see roughly:
 ok | ~100 passed | 0 failed
 ```
 
-Coverage (Sprints 1 → Sprint 2 C/D/E):
+Coverage (Sprints 1 → C/D/E):
 
 - `_tests/shared/score.test.ts` — the `deriveScore` fold.
 - `_tests/shared/score-mixed.test.ts` — scores + fouls + cards together.
@@ -497,8 +497,8 @@ release.
   live spec for the scoring/viewing backend (Sprints A–E).
 - [`sprint-1.md`](sprint-1.md) — how the Sprint 1 services
   (fixtures-public, seasons, teams) work and how to exercise them.
-- [`sprint-2.md`](sprint-2.md) — the operator access + live viewing +
-  standings + archive chunk (Sprints C/D/E).
+- [`sprints-c-d-e.md`](sprints-c-d-e.md) — the operator access + live
+  viewing + standings + archive chunk (Sprints C/D/E).
 - [`realtime.md`](realtime.md) — client-side protocol for the
   `fixture_live_state` realtime channel.
-- [`decisions/`](decisions/) — the ADRs behind Sprint 2's design.
+- [`decisions/`](decisions/) — the ADRs behind the C/D/E design.

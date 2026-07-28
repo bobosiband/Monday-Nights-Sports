@@ -30,7 +30,7 @@ monday-night-sports/
 │   ├── realtime.md                     # Supabase Realtime client protocol
 │   ├── openapi.yaml                    # source-of-truth API spec (Swagger UI)
 │   ├── sprint-1.md                     # Sprint 1 running log
-│   ├── sprint-2.md                     # Sprint 2 (C/D/E) running log
+│   ├── sprints-c-d-e.md                # Sprints C/D/E running log
 │   └── decisions/                      # ADRs (0001-0005)
 ├── scripts/
 │   ├── smoke-live.sh                   # end-to-end smoke walkthrough
@@ -126,8 +126,8 @@ supabase functions deploy api-docs
 ## Sprint status
 
 - Sprint 1 (foundation): [`docs/sprint-1.md`](docs/sprint-1.md).
-- Sprint 2 (operator access, live viewing, standings & archive):
-  [`docs/sprint-2.md`](docs/sprint-2.md).
+- Sprints C, D & E (operator access, live viewing, standings & archive):
+  [`docs/sprints-c-d-e.md`](docs/sprints-c-d-e.md).
 
 ## Licence
 
