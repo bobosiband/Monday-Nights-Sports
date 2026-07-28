@@ -17,9 +17,9 @@
 //      an update of `last_used_at` — we do NOT let that write's latency or
 //      failure delay the scoring response.
 //
-// Dev escape hatch: if `SCORING_DEV_TOKENS=true`, the guard skips DB checks
-// and passes any bearer through, logging loudly. Intended for the initial
-// smoke-test walkthrough in docs/local-setup.md; defaults to OFF.
+// No escape hatch: every write path is cryptographically bound to a real
+// `match_access` row. Local development mints codes via the seeded
+// `DEVCODE1` (see supabase/seed.sql) or via POST /match-access.
 // -----------------------------------------------------------------------------
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
@@ -35,7 +35,7 @@ export interface MatchAccessContext {
   /** The fixture the token authorises writes for. */
   fixture_id: string;
   /** The match_access row id — for future attribution on match_events. */
-  access_id: string | null;
+  access_id: string;
 }
 
 /** DB row shape used internally. */
@@ -44,23 +44,6 @@ interface MatchAccessRow {
   fixture_id: string;
   expires_at: string;
   revoked_at: string | null;
-}
-
-/**
- * Sentinel returned by the dev-token path so handlers can tell "we skipped
- * verification" apart from "we found a real access row". Downstream code
- * treats it identically — the marker just makes the log message honest.
- */
-const DEV_ACCESS_ID = null;
-
-/**
- * Read the dev-escape-hatch env var. Isolated in a helper so both the
- * guard and its tests read the same value.
- *
- * @returns `true` when `SCORING_DEV_TOKENS=true`.
- */
-function devTokensEnabled(): boolean {
-  return Deno.env.get("SCORING_DEV_TOKENS") === "true";
 }
 
 /**
@@ -84,15 +67,6 @@ export async function verifyMatchToken(
 ): Promise<MatchAccessContext | Response> {
   const bearer = extractBearer(request);
   if (!bearer) return unauthorized("Missing match code");
-
-  // Dev escape hatch — accept any non-empty bearer and skip the DB entirely.
-  // Loud console warning on every call so it can't hide in prod logs.
-  if (devTokensEnabled()) {
-    console.warn(
-      `[scoring] SCORING_DEV_TOKENS=true — accepting bearer without verification (fixture ${fixtureId})`,
-    );
-    return { fixture_id: fixtureId, access_id: DEV_ACCESS_ID };
-  }
 
   const codeHash = await hashMatchCode(bearer);
   const row = await lookup(codeHash);

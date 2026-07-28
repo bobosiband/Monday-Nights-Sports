@@ -91,7 +91,6 @@ Environment variables the functions read:
 |---|---|---|
 | `SUPABASE_URL` | Postgres + Auth base URL | ✅ yes |
 | `SUPABASE_SERVICE_ROLE_KEY` | Bypass-RLS DB client used by every Edge Function | ✅ yes |
-| `SCORING_DEV_TOKENS` | When `"true"`, the scoring guard skips DB verification and accepts any bearer (with a loud console warning). Off by default. Only for local exploration — never set in production. | ❌ optional |
 
 Match codes are opaque hashed values in the `match_access` table
 (see [`docs/decisions/0002-operator-access-model-v2.md`](docs/decisions/0002-operator-access-model-v2.md)),

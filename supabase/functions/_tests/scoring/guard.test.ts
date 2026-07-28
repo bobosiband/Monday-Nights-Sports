@@ -12,9 +12,8 @@
 //   - revoked code                            → 401
 //   - valid code, wrong fixture               → 403
 //   - valid code, right fixture               → passes (returns access_id)
-//   - SCORING_DEV_TOKENS=true                 → any bearer passes
 //
-// Run with: `deno test --allow-env --allow-net supabase/functions/_tests/`
+// Run with: `deno test --allow-net supabase/functions/_tests/`
 // -----------------------------------------------------------------------------
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
@@ -52,23 +51,15 @@ function lookupFor(
   return (hash) => Promise.resolve(hash === expectedHash ? row : null);
 }
 
-// Make sure the escape hatch is off before every test — env can leak
-// between test files inside a single Deno process.
-function ensureDevOff() {
-  Deno.env.delete("SCORING_DEV_TOKENS");
-}
-
 // ---------- 401 paths ------------------------------------------------------
 
 Deno.test("guard: missing Authorization header → 401", async () => {
-  ensureDevOff();
   const res = await verifyMatchToken(req(), FIXTURE, () => Promise.resolve(null));
   if (!(res instanceof Response)) throw new Error("expected Response");
   assertEquals(res.status, 401);
 });
 
 Deno.test("guard: malformed header (non-Bearer) → 401", async () => {
-  ensureDevOff();
   const r = new Request("http://t/", {
     method: "POST",
     headers: { authorization: "Basic dXNlcjpwYXNz" },
@@ -79,7 +70,6 @@ Deno.test("guard: malformed header (non-Bearer) → 401", async () => {
 });
 
 Deno.test("guard: unknown code (hash miss) → 401", async () => {
-  ensureDevOff();
   const res = await verifyMatchToken(
     req("NOTACODE"),
     FIXTURE,
@@ -90,7 +80,6 @@ Deno.test("guard: unknown code (hash miss) → 401", async () => {
 });
 
 Deno.test("guard: expired code → 401", async () => {
-  ensureDevOff();
   const hash = await hashMatchCode(CODE);
   const res = await verifyMatchToken(
     req(CODE),
@@ -108,7 +97,6 @@ Deno.test("guard: expired code → 401", async () => {
 });
 
 Deno.test("guard: revoked code → 401", async () => {
-  ensureDevOff();
   const hash = await hashMatchCode(CODE);
   const res = await verifyMatchToken(
     req(CODE),
@@ -127,7 +115,6 @@ Deno.test("guard: revoked code → 401", async () => {
 // ---------- 403 path -------------------------------------------------------
 
 Deno.test("guard: valid code minted for a different fixture → 403", async () => {
-  ensureDevOff();
   const hash = await hashMatchCode(CODE);
   const res = await verifyMatchToken(
     req(CODE),
@@ -146,7 +133,6 @@ Deno.test("guard: valid code minted for a different fixture → 403", async () =
 // ---------- happy path -----------------------------------------------------
 
 Deno.test("guard: valid code for the right fixture → passes with access_id", async () => {
-  ensureDevOff();
   const hash = await hashMatchCode(CODE);
   const res = await verifyMatchToken(
     req(CODE),
@@ -163,41 +149,4 @@ Deno.test("guard: valid code for the right fixture → passes with access_id", a
   }
   assertEquals(res.fixture_id, FIXTURE);
   assertEquals(res.access_id, ACCESS_ID);
-});
-
-// ---------- dev escape hatch ----------------------------------------------
-
-Deno.test("guard: SCORING_DEV_TOKENS=true accepts any bearer without DB", async () => {
-  Deno.env.set("SCORING_DEV_TOKENS", "true");
-  try {
-    const res = await verifyMatchToken(
-      req("literally-anything"),
-      FIXTURE,
-      () => {
-        throw new Error("lookup should not be called in dev mode");
-      },
-    );
-    if (res instanceof Response) {
-      throw new Error(`expected context, got Response ${res.status}`);
-    }
-    assertEquals(res.fixture_id, FIXTURE);
-    assertEquals(res.access_id, null);
-  } finally {
-    Deno.env.delete("SCORING_DEV_TOKENS");
-  }
-});
-
-Deno.test("guard: dev flag still 401s a missing header (bearer must exist)", async () => {
-  Deno.env.set("SCORING_DEV_TOKENS", "true");
-  try {
-    const res = await verifyMatchToken(
-      req(),
-      FIXTURE,
-      () => Promise.resolve(null),
-    );
-    if (!(res instanceof Response)) throw new Error("expected Response");
-    assertEquals(res.status, 401);
-  } finally {
-    Deno.env.delete("SCORING_DEV_TOKENS");
-  }
 });

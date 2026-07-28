@@ -214,14 +214,11 @@ Coverage (Sprints 1 → Sprint 2 C/D/E):
 - `_tests/scoring/validate-event.test.ts` — request-body validation.
 - `_tests/scoring/period-state.test.ts` — `periodIsOpen` helper.
 - `_tests/scoring/period-breakdown.test.ts` — finalize's period fold.
-- `_tests/scoring/guard.test.ts` — verifyMatchToken: expired / revoked / wrong-fixture / dev-flag.
+- `_tests/scoring/guard.test.ts` — verifyMatchToken: expired / revoked / wrong-fixture / happy path.
 - `_tests/fixtures-public/render.test.ts` — LIVE badge and score rendering.
 
-You may need `--allow-env` for the guard tests (they toggle
-`SCORING_DEV_TOKENS`):
-
 ```bash
-deno test --allow-net --allow-env supabase/functions/_tests/
+deno test --allow-net supabase/functions/_tests/
 ```
 
 Type-check the whole service (no execution):
@@ -257,18 +254,6 @@ export SUPABASE_ANON_KEY=$(supabase status -o json | jq -r .API.ANON_KEY)
 
 Every step prints PASS / FAIL; the summary line at the bottom is the
 overall verdict.
-
-### Dev escape hatch
-
-If you want to poke around scoring without minting a real code, set
-`SCORING_DEV_TOKENS=true` in the function environment. The guard skips
-the DB lookup and accepts any bearer, logging a loud warning on every
-call. **Off by default and never for production.** See ADR 0002 for
-why the real path is a DB lookup.
-
-```bash
-SCORING_DEV_TOKENS=true supabase functions serve scoring
-```
 
 ### Manual walkthrough — bash / zsh (macOS, Linux, WSL2)
 
@@ -445,12 +430,10 @@ or edit `supabase/config.toml` to shift the numbers.
 
 ### 401 from every scoring route
 
-Since Sprint 2 the scoring guard hashes the bearer and looks it up in
-`match_access`. Either mint a real code (`POST /match-access`) or use
-the seeded dev code `DEVCODE1` — anything else 401s. If you want the
-old pass-through behaviour temporarily, export
-`SCORING_DEV_TOKENS=true` before serving the function; the guard will
-warn on every request. **Never set that in production.**
+The scoring guard hashes the bearer and looks it up in `match_access`.
+Either mint a real code (`POST /match-access`) or use the seeded dev
+code `DEVCODE1` — anything else 401s. There is no pass-through mode;
+every scoring write is cryptographically bound to a `match_access` row.
 
 ### 500 from a scoring route, no obvious body
 
