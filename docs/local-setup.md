@@ -503,3 +503,5 @@ release.
 - [`realtime.md`](realtime.md) — client-side protocol for the
   `fixture_live_state` realtime channel.
 - [`decisions/`](decisions/) — the ADRs behind the C/D/E design.
+- [`production-deploy-checklist.md`](production-deploy-checklist.md) —
+  what to verify before pushing to a hosted Supabase project.

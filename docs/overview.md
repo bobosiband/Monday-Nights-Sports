@@ -104,3 +104,5 @@ here is a self-contained API.
   [`docs/scoring-viewing-backend-plan.md`](scoring-viewing-backend-plan.md)
 - Running it locally / Sprint 1 detail → [`README.md`](../README.md),
   [`docs/sprint-1.md`](sprint-1.md)
+- Deploying to a hosted Supabase project →
+  [`docs/production-deploy-checklist.md`](production-deploy-checklist.md)
