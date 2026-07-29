@@ -25,30 +25,52 @@ actually shipped:
 
 **Action:** treat `planning.md` as *aspirational product notes*, not the build
 spec. When we regenerate sprints/epics/stories, they must describe the **Supabase
-reality** plus the additions below. Reconcile or archive `planning.md` so future
-contributors aren't misled. (There's also a stray `decisions/hey.md` — review and
-remove during cleanup.)
+reality** plus the additions below. `planning/planning.md` and the stray
+`decisions/hey.md` have both been removed as part of the repo-hygiene pass —
+this section is kept as a signpost for anyone who finds an old link.
 
 ---
 
-## 1. Current state (Sprint 1, already shipped)
+## 1. Current state
 
+**Sprints 1 + A + B + C + D + E are shipped.** The scoring/viewing arc
+below now works end-to-end against a live Supabase stack; the smoke
+walkthrough lives at `scripts/smoke-live.sh`.
+
+### Shipped
 - **Schema:** `seasons`, `teams`, `players` (dormant), `events`, `slots`,
-  `fixtures`, `results`. RLS = public read on *published* data, authenticated
-  write.
-- **Edge functions:** `fixtures-public` (HTML/text/JSON draw), `seasons`,
-  `teams`. Shared `_shared/{auth,cors,supabase-client}.ts`.
-- **Auth:** "organiser" == any authenticated Supabase user (role table can be
-  layered later).
+  `fixtures`, `results` (+ `periods`, `decided_by`), `sport_configs`,
+  `match_events` (append-only, soft-void), `match_access` (hashed
+  scoped-code table), `fixture_live_state` (realtime projection). RLS =
+  public read on *published* data, authenticated write for organisers,
+  match-code guard for scoring.
+- **Edge functions:**
+  - Organiser (Supabase Auth JWT): `seasons`, `teams`, `sport-configs`,
+    `match-access`.
+  - Scoring (match code): `scoring/:fixtureId/{start,events,undo,period,finalize}`.
+  - Public: `fixtures-public`, `live`, `standings`, `results-public`,
+    `api-docs` (Swagger UI).
+- **Auth:** "organiser" == any authenticated Supabase user; sideline
+  operator == a `match_access` row (opaque code, SHA-256 hashed at rest,
+  bound to one fixture, TTL + revocation).
+- **Realtime:** viewers subscribe to `public.fixture_live_state`
+  filtered by `fixture_id`; every scoring write upserts a derived
+  summary into that projection so no raw event rows are broadcast (see
+  ADR 0003 and `docs/realtime.md`).
 
-### What's missing for scoring + live viewing
-- No append-only match event log → no incremental scoring, no undo.
-- `results` stores only a final score → no period breakdown, no live derivation.
-- No sport configuration → scoring increments / periods / fouls are sport-specific.
-- No fouls / cards / timeouts model.
-- No score-operator access path (sideline volunteers, refs).
-- No real-time distribution to viewers.
-- No standings.
+### Deferred (with data hooks preserved — see ADR 0005)
+- Scorer attribution surfacing (`match_events.player_id` captured but
+  no read path exposes it).
+- Penalty shootouts (`decided_by='penalties'` accepted as a bare marker
+  on `results`; per-shot event modelling not built — natural shape is a
+  new `type='penalty_kick'` event when added).
+
+### Still missing (next tracks)
+- Organiser **draw builder** — an `events` service that lets an
+  organiser create an event, its slots, its fixtures, and publish the
+  draw. Today the draw only exists via `seed.sql`. Called out in the
+  "Next sprint" section at the bottom of this doc.
+- Round-robin generator (its own sub-track, epic filed).
 
 ---
 

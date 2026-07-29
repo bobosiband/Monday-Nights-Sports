@@ -80,14 +80,3 @@ export function conflict(message: string): Response {
 export function serverError(): Response {
   return jsonResponse({ error: "Internal server error" }, 500);
 }
-
-/**
- * 501 Not Implemented — used by scaffolded handlers until the story that
- * fills them in lands.
- *
- * @param message - Description shown to the caller.
- * @returns A 501 Response.
- */
-export function notImplemented(message = "Not implemented"): Response {
-  return jsonResponse({ error: message }, 501);
-}
