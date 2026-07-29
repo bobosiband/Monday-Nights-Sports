@@ -167,8 +167,11 @@ export async function insertEvent(
  *
  * @param supabase - The Supabase client.
  * @param eventId - UUID of the event.
- * @param voidedBy - UUID of the operator recording the undo (nullable in
- *                   Sprint B while the token guard is a stub).
+ * @param voidedBy - UUID of the operator recording the undo. Always null
+ *                   today: `match_events.voided_by` references
+ *                   `auth.users`, but sideline operators authenticate via
+ *                   `match_access` codes and have no auth user. See
+ *                   ADR 0005 for the deferred-attribution plan.
  * @returns `{ alreadyVoided }` so the handler can pick the right response.
  */
 export async function voidEvent(

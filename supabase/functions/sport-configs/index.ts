@@ -20,6 +20,7 @@ import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase-client.ts";
 import { isAuthFailure, requireOrganiser } from "../_shared/auth.ts";
 import { isUuid, nonEmptyString, readJson } from "../_shared/validate.ts";
+import { validateConfig } from "./validate-config.ts";
 
 /** Body of a POST /sport-configs (upsert on season+sport). */
 interface UpsertBody {
@@ -32,107 +33,6 @@ interface UpsertBody {
 interface PatchBody {
   sport?: unknown;
   config?: unknown;
-}
-
-/**
- * Validation result shape used everywhere: `{ ok: true, value }` or
- * `{ ok: false, error }`. Consistent with `_shared/validate.ts`.
- */
-type Validated<T> = { ok: true; value: T } | { ok: false; error: string };
-
-/**
- * Deep-validate a `config` JSONB blob before we let it into the DB. The
- * pure-scoring / pure-standings code both tolerate empty or partial
- * configs (deriveScore doesn't crash on missing keys), so we only fail
- * writes whose values are *actively wrong*. This is a tradeoff: strict
- * where a bad value would silently corrupt a table, permissive where
- * absence is fine.
- *
- * Rules:
- *   - `periods.count`   — positive integer.
- *   - `periods.minutes` — positive integer (when present).
- *   - `periods.direction` — must be 'up' or 'down' (when present).
- *   - `score_increments` — non-empty array of positive integers.
- *   - `track_fouls` — boolean (when present).
- *   - `standings.points` — object with `win`, `draw`, `loss` each a
- *     non-negative integer.
- *   - `standings.tiebreakers` — array of strings (unknown names are
- *     tolerated by the computer, so we don't gate on the specific
- *     spellings — only that the field is well-typed).
- *
- * @param raw - The `config` value from the request body.
- * @returns Either the accepted config (typed loosely as an object) or an
- *          error message suitable for a 400.
- */
-function validateConfig(raw: unknown): Validated<Record<string, unknown>> {
-  if (raw === null || raw === undefined || typeof raw !== "object" || Array.isArray(raw)) {
-    return { ok: false, error: "config must be a JSON object" };
-  }
-  const config = raw as Record<string, unknown>;
-
-  if ("periods" in config) {
-    const p = config.periods;
-    if (!p || typeof p !== "object" || Array.isArray(p)) {
-      return { ok: false, error: "periods must be an object" };
-    }
-    const pp = p as Record<string, unknown>;
-    if (!Number.isInteger(pp.count) || (pp.count as number) <= 0) {
-      return { ok: false, error: "periods.count must be a positive integer" };
-    }
-    if ("minutes" in pp && (!Number.isInteger(pp.minutes) || (pp.minutes as number) <= 0)) {
-      return { ok: false, error: "periods.minutes must be a positive integer" };
-    }
-    if ("direction" in pp && pp.direction !== "up" && pp.direction !== "down") {
-      return { ok: false, error: "periods.direction must be 'up' or 'down'" };
-    }
-  }
-
-  if ("score_increments" in config) {
-    const inc = config.score_increments;
-    if (!Array.isArray(inc) || inc.length === 0) {
-      return { ok: false, error: "score_increments must be a non-empty array" };
-    }
-    for (const v of inc) {
-      if (!Number.isInteger(v) || (v as number) <= 0) {
-        return { ok: false, error: "score_increments entries must be positive integers" };
-      }
-    }
-  }
-
-  if ("track_fouls" in config && typeof config.track_fouls !== "boolean") {
-    return { ok: false, error: "track_fouls must be a boolean" };
-  }
-
-  if ("standings" in config) {
-    const s = config.standings;
-    if (!s || typeof s !== "object" || Array.isArray(s)) {
-      return { ok: false, error: "standings must be an object" };
-    }
-    const ss = s as Record<string, unknown>;
-    if ("points" in ss) {
-      const pts = ss.points;
-      if (!pts || typeof pts !== "object" || Array.isArray(pts)) {
-        return { ok: false, error: "standings.points must be an object" };
-      }
-      for (const key of ["win", "draw", "loss"] as const) {
-        const v = (pts as Record<string, unknown>)[key];
-        if (!Number.isInteger(v) || (v as number) < 0) {
-          return {
-            ok: false,
-            error: `standings.points.${key} must be a non-negative integer`,
-          };
-        }
-      }
-    }
-    if ("tiebreakers" in ss) {
-      const tb = ss.tiebreakers;
-      if (!Array.isArray(tb) || tb.some((t) => typeof t !== "string")) {
-        return { ok: false, error: "standings.tiebreakers must be an array of strings" };
-      }
-    }
-  }
-
-  return { ok: true, value: config };
 }
 
 /**

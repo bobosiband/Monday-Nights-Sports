@@ -216,6 +216,8 @@ Coverage (Sprints 1 → C/D/E):
 - `_tests/scoring/period-breakdown.test.ts` — finalize's period fold.
 - `_tests/scoring/guard.test.ts` — verifyMatchToken: expired / revoked / wrong-fixture / happy path.
 - `_tests/fixtures-public/render.test.ts` — LIVE badge and score rendering.
+- `_tests/sport-configs/validate-config.test.ts` — strict shape validation for the sport-configs body.
+- `_tests/shared/round-robin.test.ts` — pure round-robin generator (all-pairs, bye distribution, determinism).
 
 ```bash
 deno test --allow-net supabase/functions/_tests/
@@ -502,3 +504,5 @@ release.
 - [`realtime.md`](realtime.md) — client-side protocol for the
   `fixture_live_state` realtime channel.
 - [`decisions/`](decisions/) — the ADRs behind the C/D/E design.
+- [`production-deploy-checklist.md`](production-deploy-checklist.md) —
+  what to verify before pushing to a hosted Supabase project.

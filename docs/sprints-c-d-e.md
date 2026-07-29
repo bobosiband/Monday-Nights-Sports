@@ -142,6 +142,7 @@ Coverage added in this sprint:
 - `_tests/shared/standings.test.ts` — points / tiebreakers / byes / unknown-tiebreaker robustness.
 - `_tests/scoring/guard.test.ts` — 401 / 403 flows on the real hash lookup.
 - `_tests/fixtures-public/render.test.ts` — LIVE badge + score rendering across HTML / text / JSON.
+- `_tests/sport-configs/validate-config.test.ts` — strict-body validation for sport-configs (retroactive; see #53).
 
 Existing Sprint 1/B tests still pass.
 
@@ -159,17 +160,25 @@ Existing Sprint 1/B tests still pass.
 
 ## Issue tracker sync
 
-If you have `gh` available, close the corresponding stories in the
-`scripts/regenerate-tracking.sh` issue set. Otherwise, list the issue
-numbers here after review:
+The Sprint C/D/E stories on GitHub are all closed. Their numbers map to
+the milestones as follows (see `scripts/regenerate-tracking.sh` for how
+the labels + milestones were bootstrapped):
 
-- [ ] #36 operator-access model decided → superseded by ADR 0002
-- [ ] #37 match-access mint/revoke routes
-- [ ] #38 scoring guard uses real match-code verification
-- [ ] #39 realtime projection (`fixture_live_state`)
-- [ ] #40 `GET /live/:fixture` public
-- [ ] #41 LIVE badge in `fixtures-public`
-- [ ] #42 `sport-configs` CRUD
-- [ ] #43 standings library + tests
-- [ ] #44 `GET /standings?season=` public
-- [ ] #45 `results-public` archive
+- Sprint C — Operator access
+  - [x] #36 decide operator access model + implement → resolved by ADR 0002
+  - [x] #37 `match-access` organiser function (mint / revoke / list)
+  - [x] #38 match-token validation inside `scoring`, bound to fixture
+  - [x] #39 expiry + revocation tests (`_tests/scoring/guard.test.ts`)
+- Sprint D — Live viewing
+  - [x] #40 Realtime channel design + score-summary broadcast → ADR 0003
+  - [x] #41 `GET /live/:fixtureId` public derived score
+  - [x] #42 LIVE status surfaced in `fixtures-public`
+- Sprint E — Standings & archive
+  - [x] #43 standings calc library + unit tests
+  - [x] #44 `GET /standings?season=` public
+  - [x] #45 `results-public` past-events archive
+
+`sport-configs` organiser CRUD (T11 above) was in the plan's service
+table (§4) but never got a story number — it was filed retroactively
+after landing so future readers can trace the shipped commit back to a
+tracked issue.
