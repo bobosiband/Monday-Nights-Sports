@@ -1,6 +1,8 @@
 # ADR 0005 — Deferring player attribution and penalty shootouts
 
 **Status:** Accepted, 2026-07-26.
+**Tracker:** #54 (penalty shootouts) — filed retroactively so the
+`needs-decision` label surfaces the decision in issue search.
 
 ## Context
 
