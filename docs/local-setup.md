@@ -216,6 +216,7 @@ Coverage (Sprints 1 → C/D/E):
 - `_tests/scoring/period-breakdown.test.ts` — finalize's period fold.
 - `_tests/scoring/guard.test.ts` — verifyMatchToken: expired / revoked / wrong-fixture / happy path.
 - `_tests/fixtures-public/render.test.ts` — LIVE badge and score rendering.
+- `_tests/sport-configs/validate-config.test.ts` — strict shape validation for the sport-configs body.
 
 ```bash
 deno test --allow-net supabase/functions/_tests/

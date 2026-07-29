@@ -142,6 +142,7 @@ Coverage added in this sprint:
 - `_tests/shared/standings.test.ts` — points / tiebreakers / byes / unknown-tiebreaker robustness.
 - `_tests/scoring/guard.test.ts` — 401 / 403 flows on the real hash lookup.
 - `_tests/fixtures-public/render.test.ts` — LIVE badge + score rendering across HTML / text / JSON.
+- `_tests/sport-configs/validate-config.test.ts` — strict-body validation for sport-configs (retroactive; see #53).
 
 Existing Sprint 1/B tests still pass.
 
