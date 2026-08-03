@@ -56,7 +56,11 @@ export interface StandingsRow {
 const DEFAULT_POINTS = { win: 3, draw: 1, loss: 0 } as const;
 
 /** Default tiebreakers when the config doesn't specify. */
-const DEFAULT_TIEBREAKERS: readonly string[] = ["points", "goal_diff", "goals_for"];
+const DEFAULT_TIEBREAKERS: readonly string[] = [
+  "points",
+  "goal_diff",
+  "goals_for",
+];
 
 /**
  * Compute a standings table. Deterministic — given the same inputs, the

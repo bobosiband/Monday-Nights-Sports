@@ -15,9 +15,9 @@
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { jsonResponse } from "../_shared/cors.ts";
-import { deriveScore, type DerivedScore } from "../_shared/score.ts";
+import { type DerivedScore, deriveScore } from "../_shared/score.ts";
 import { loadEvents, loadSportConfig, upsertLiveState } from "./db.ts";
-import type { FixtureContext, DerivedResponse } from "./types.ts";
+import type { DerivedResponse, FixtureContext } from "./types.ts";
 import type { FixtureStatus } from "./constants.ts";
 
 /**
@@ -66,7 +66,13 @@ export async function respondDerived(
     }
   }
 
-  await writeLiveState(supabase, fixture.id, derived, effectiveStatus, lastEventAt);
+  await writeLiveState(
+    supabase,
+    fixture.id,
+    derived,
+    effectiveStatus,
+    lastEventAt,
+  );
 
   const body: DerivedResponse = {
     fixture_id: fixture.id,

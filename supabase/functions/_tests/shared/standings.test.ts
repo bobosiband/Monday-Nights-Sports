@@ -13,7 +13,10 @@
 // -----------------------------------------------------------------------------
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { computeStandings, type FinishedFixture } from "../../_shared/standings.ts";
+import {
+  computeStandings,
+  type FinishedFixture,
+} from "../../_shared/standings.ts";
 import type { SportConfig } from "../../_shared/score.ts";
 
 const REDS = "a1111111-1111-1111-1111-111111111111";
@@ -96,9 +99,9 @@ Deno.test("clean table: two wins > one win > no wins, points ordering", () => {
   // Greens has more goals_for (2 vs Blues' 1) so goals_for tiebreaks Greens
   // above Blues.
   assertEquals(rows.map((r) => r.team_name), ["Reds", "Greens", "Blues"]);
-  assertEquals(rows[0].points, 6);   // Reds: 2 wins
-  assertEquals(rows[1].points, 1);   // Greens: 1 draw
-  assertEquals(rows[2].points, 1);   // Blues: 1 draw
+  assertEquals(rows[0].points, 6); // Reds: 2 wins
+  assertEquals(rows[1].points, 1); // Greens: 1 draw
+  assertEquals(rows[2].points, 1); // Blues: 1 draw
 });
 
 Deno.test("goals_for tiebreaker orders equal points/GD correctly", () => {
@@ -107,14 +110,20 @@ Deno.test("goals_for tiebreaker orders equal points/GD correctly", () => {
   const rows = computeStandings(
     [
       fx({
-        home_team_id: REDS, home_team_name: "Reds",
-        away_team_id: BLUES, away_team_name: "Blues",
-        home_score: 3, away_score: 3,
+        home_team_id: REDS,
+        home_team_name: "Reds",
+        away_team_id: BLUES,
+        away_team_name: "Blues",
+        home_score: 3,
+        away_score: 3,
       }),
       fx({
-        home_team_id: GREENS, home_team_name: "Greens",
-        away_team_id: YELLOWS, away_team_name: "Yellows",
-        home_score: 1, away_score: 1,
+        home_team_id: GREENS,
+        home_team_name: "Greens",
+        away_team_id: YELLOWS,
+        away_team_name: "Yellows",
+        home_score: 1,
+        away_score: 1,
       }),
     ],
     soccerConfig,
@@ -130,14 +139,20 @@ Deno.test("goal_diff tiebreaker breaks a points tie", () => {
   const rows = computeStandings(
     [
       fx({
-        home_team_id: REDS, home_team_name: "Reds",
-        away_team_id: BLUES, away_team_name: "Blues",
-        home_score: 5, away_score: 0,
+        home_team_id: REDS,
+        home_team_name: "Reds",
+        away_team_id: BLUES,
+        away_team_name: "Blues",
+        home_score: 5,
+        away_score: 0,
       }),
       fx({
-        home_team_id: GREENS, home_team_name: "Greens",
-        away_team_id: YELLOWS, away_team_name: "Yellows",
-        home_score: 1, away_score: 0,
+        home_team_id: GREENS,
+        home_team_name: "Greens",
+        away_team_id: YELLOWS,
+        away_team_name: "Yellows",
+        home_score: 1,
+        away_score: 0,
       }),
     ],
     soccerConfig,
@@ -157,9 +172,12 @@ Deno.test("unknown tiebreaker string is skipped, not crashed", () => {
   const rows = computeStandings(
     [
       fx({
-        home_team_id: REDS, home_team_name: "Reds",
-        away_team_id: BLUES, away_team_name: "Blues",
-        home_score: 1, away_score: 0,
+        home_team_id: REDS,
+        home_team_name: "Reds",
+        away_team_id: BLUES,
+        away_team_name: "Blues",
+        home_score: 1,
+        away_score: 0,
       }),
     ],
     config,
@@ -173,14 +191,20 @@ Deno.test("byes contribute nothing to either team", () => {
   const rows = computeStandings(
     [
       fx({
-        home_team_id: REDS, home_team_name: "Reds",
-        away_team_id: BLUES, away_team_name: "Blues",
-        home_score: 1, away_score: 0,
+        home_team_id: REDS,
+        home_team_name: "Reds",
+        away_team_id: BLUES,
+        away_team_name: "Blues",
+        home_score: 1,
+        away_score: 0,
       }),
       fx({
-        home_team_id: REDS, home_team_name: "Reds",
-        away_team_id: null, away_team_name: null,
-        home_score: 0, away_score: 0,
+        home_team_id: REDS,
+        home_team_name: "Reds",
+        away_team_id: null,
+        away_team_name: null,
+        home_score: 0,
+        away_score: 0,
       }),
     ],
     soccerConfig,
@@ -195,14 +219,20 @@ Deno.test("netball 2-point-win config produces different totals from soccer's 3"
   // A team with 2 wins should have 6 in soccer, 4 in netball.
   const fixtures = [
     fx({
-      home_team_id: REDS, home_team_name: "Reds",
-      away_team_id: BLUES, away_team_name: "Blues",
-      home_score: 2, away_score: 0,
+      home_team_id: REDS,
+      home_team_name: "Reds",
+      away_team_id: BLUES,
+      away_team_name: "Blues",
+      home_score: 2,
+      away_score: 0,
     }),
     fx({
-      home_team_id: REDS, home_team_name: "Reds",
-      away_team_id: GREENS, away_team_name: "Greens",
-      home_score: 3, away_score: 1,
+      home_team_id: REDS,
+      home_team_name: "Reds",
+      away_team_id: GREENS,
+      away_team_name: "Greens",
+      home_score: 3,
+      away_score: 1,
     }),
   ];
   const soccer = computeStandings(fixtures, soccerConfig);
@@ -216,9 +246,12 @@ Deno.test("absent standings block falls back to 3/1/0", () => {
   const rows = computeStandings(
     [
       fx({
-        home_team_id: REDS, home_team_name: "Reds",
-        away_team_id: BLUES, away_team_name: "Blues",
-        home_score: 1, away_score: 0,
+        home_team_id: REDS,
+        home_team_name: "Reds",
+        away_team_id: BLUES,
+        away_team_name: "Blues",
+        home_score: 1,
+        away_score: 0,
       }),
     ],
     empty,
@@ -230,9 +263,12 @@ Deno.test("goal_diff is populated on the returned rows", () => {
   const rows = computeStandings(
     [
       fx({
-        home_team_id: REDS, home_team_name: "Reds",
-        away_team_id: BLUES, away_team_name: "Blues",
-        home_score: 4, away_score: 1,
+        home_team_id: REDS,
+        home_team_name: "Reds",
+        away_team_id: BLUES,
+        away_team_name: "Blues",
+        home_score: 4,
+        away_score: 1,
       }),
     ],
     soccerConfig,
@@ -246,9 +282,12 @@ Deno.test("final tiebreaker is alphabetical by team name (deterministic)", () =>
   const rows = computeStandings(
     [
       fx({
-        home_team_id: BLUES, home_team_name: "Blues",
-        away_team_id: REDS, away_team_name: "Reds",
-        home_score: 1, away_score: 1,
+        home_team_id: BLUES,
+        home_team_name: "Blues",
+        away_team_id: REDS,
+        away_team_name: "Reds",
+        home_score: 1,
+        away_score: 1,
       }),
     ],
     soccerConfig,

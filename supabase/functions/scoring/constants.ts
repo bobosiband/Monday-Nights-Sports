@@ -58,7 +58,8 @@ export const FIXTURE_STATUS = {
   cancelled: "cancelled",
 } as const;
 
-export type FixtureStatus = (typeof FIXTURE_STATUS)[keyof typeof FIXTURE_STATUS];
+export type FixtureStatus =
+  (typeof FIXTURE_STATUS)[keyof typeof FIXTURE_STATUS];
 
 /**
  * Values accepted on `results.decided_by` (mirrors 0002).

@@ -49,7 +49,10 @@ export async function requireOrganiser(
 ): Promise<AuthenticatedUser | Response> {
   const token = extractBearerToken(request);
   if (!token) {
-    return jsonResponse({ error: "Missing or malformed Authorization header" }, 401);
+    return jsonResponse(
+      { error: "Missing or malformed Authorization header" },
+      401,
+    );
   }
 
   const supabase = createServiceClient();

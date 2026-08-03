@@ -59,7 +59,11 @@ export async function handleRecordEvent(
 
   const supabase = client();
   const body = await readJson<RecordEventBody>(request);
-  const config = await loadSportConfig(supabase, fixture.season_id, fixture.sport);
+  const config = await loadSportConfig(
+    supabase,
+    fixture.season_id,
+    fixture.sport,
+  );
   const parsed = validateRecordBody(body, fixture, config);
   if (!parsed.ok) return badRequest(parsed.error);
 

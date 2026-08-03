@@ -6,14 +6,14 @@
 // has already been ended).
 // -----------------------------------------------------------------------------
 
-import { readJson, positiveInt, nonNegativeInt } from "../../_shared/validate.ts";
+import {
+  nonNegativeInt,
+  positiveInt,
+  readJson,
+} from "../../_shared/validate.ts";
 import { badRequest, conflict } from "../errors.ts";
 import { FIXTURE_STATUS } from "../constants.ts";
-import {
-  client,
-  insertEvent,
-  loadEvents,
-} from "../db.ts";
+import { client, insertEvent, loadEvents } from "../db.ts";
 import { respondDerived } from "../derive.ts";
 import { periodIsOpen } from "../period-state.ts";
 import type {
@@ -66,9 +66,10 @@ export async function handlePeriod(
   const period = positiveInt(body.period);
   if (period === null) return badRequest("period must be a positive integer");
 
-  const clock = body.match_clock_ms === undefined || body.match_clock_ms === null
-    ? null
-    : nonNegativeInt(body.match_clock_ms);
+  const clock =
+    body.match_clock_ms === undefined || body.match_clock_ms === null
+      ? null
+      : nonNegativeInt(body.match_clock_ms);
   if (
     body.match_clock_ms !== undefined && body.match_clock_ms !== null &&
     clock === null

@@ -10,15 +10,11 @@
 // wrong row.
 // -----------------------------------------------------------------------------
 
-import { readJson, isUuid } from "../../_shared/validate.ts";
+import { isUuid, readJson } from "../../_shared/validate.ts";
 import { badRequest, forbidden, notFound } from "../errors.ts";
 import { client, findEvent, voidEvent } from "../db.ts";
 import { respondDerived } from "../derive.ts";
-import type {
-  FixtureContext,
-  MatchAccessContext,
-  UndoBody,
-} from "../types.ts";
+import type { FixtureContext, MatchAccessContext, UndoBody } from "../types.ts";
 
 /**
  * Soft-void a match_event so it stops contributing to the derived score.

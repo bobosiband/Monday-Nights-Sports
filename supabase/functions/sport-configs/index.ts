@@ -78,13 +78,18 @@ serve(async (request) => {
 
       if (request.method === "POST") {
         const body = await readJson<UpsertBody>(request);
-        if (!body) return jsonResponse({ error: "Request body must be JSON" }, 400);
+        if (!body) {
+          return jsonResponse({ error: "Request body must be JSON" }, 400);
+        }
         if (!isUuid(body.season_id)) {
           return jsonResponse({ error: "season_id must be a UUID" }, 400);
         }
         const sport = nonEmptyString(body.sport, 60);
         if (!sport) {
-          return jsonResponse({ error: "sport must be a non-empty string" }, 400);
+          return jsonResponse(
+            { error: "sport must be a non-empty string" },
+            400,
+          );
         }
         const parsed = validateConfig(body.config);
         if (!parsed.ok) return jsonResponse({ error: parsed.error }, 400);
@@ -116,7 +121,9 @@ serve(async (request) => {
 
     if (request.method === "PATCH") {
       const body = await readJson<PatchBody>(request);
-      if (!body) return jsonResponse({ error: "Request body must be JSON" }, 400);
+      if (!body) {
+        return jsonResponse({ error: "Request body must be JSON" }, 400);
+      }
 
       const patch: Record<string, unknown> = {};
       if (body.sport !== undefined) {

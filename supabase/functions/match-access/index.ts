@@ -20,10 +20,7 @@ import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { isAuthFailure, requireOrganiser } from "../_shared/auth.ts";
 import { createServiceClient } from "../_shared/supabase-client.ts";
 import { isUuid, nonEmptyString, readJson } from "../_shared/validate.ts";
-import {
-  generateMatchCode,
-  hashMatchCode,
-} from "../_shared/match-token.ts";
+import { generateMatchCode, hashMatchCode } from "../_shared/match-token.ts";
 import {
   findAccess,
   insertAccess,

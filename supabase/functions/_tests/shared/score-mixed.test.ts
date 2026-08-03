@@ -17,7 +17,10 @@ const HOME = "11111111-1111-1111-1111-111111111111";
 const AWAY = "22222222-2222-2222-2222-222222222222";
 
 const soccer: SportConfig = { score_increments: [1], track_fouls: true };
-const basketball: SportConfig = { score_increments: [1, 2, 3], track_fouls: false };
+const basketball: SportConfig = {
+  score_increments: [1, 2, 3],
+  track_fouls: false,
+};
 
 /**
  * Build a match_event with sensible defaults. Test-only.

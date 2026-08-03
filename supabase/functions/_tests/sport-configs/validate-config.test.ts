@@ -26,7 +26,11 @@ import { validateConfig } from "../../sport-configs/validate-config.ts";
  */
 function assertRejects(raw: unknown, expected: string): void {
   const result = validateConfig(raw);
-  assertEquals(result.ok, false, `expected rejection for ${JSON.stringify(raw)}`);
+  assertEquals(
+    result.ok,
+    false,
+    `expected rejection for ${JSON.stringify(raw)}`,
+  );
   if (!result.ok) {
     assert(
       result.error.includes(expected),
@@ -59,10 +63,22 @@ Deno.test("periods must be an object; array or scalar rejected", () => {
 
 Deno.test("periods.count must be a positive integer", () => {
   assertRejects({ periods: {} }, "periods.count must be a positive integer");
-  assertRejects({ periods: { count: 0 } }, "periods.count must be a positive integer");
-  assertRejects({ periods: { count: -1 } }, "periods.count must be a positive integer");
-  assertRejects({ periods: { count: 1.5 } }, "periods.count must be a positive integer");
-  assertRejects({ periods: { count: "2" } }, "periods.count must be a positive integer");
+  assertRejects(
+    { periods: { count: 0 } },
+    "periods.count must be a positive integer",
+  );
+  assertRejects(
+    { periods: { count: -1 } },
+    "periods.count must be a positive integer",
+  );
+  assertRejects(
+    { periods: { count: 1.5 } },
+    "periods.count must be a positive integer",
+  );
+  assertRejects(
+    { periods: { count: "2" } },
+    "periods.count must be a positive integer",
+  );
 });
 
 Deno.test("periods.minutes optional; when present must be a positive integer", () => {
@@ -100,9 +116,18 @@ Deno.test("periods.direction optional; when present must be 'up' or 'down'", () 
 // ---------- score_increments ----------------------------------------------
 
 Deno.test("score_increments must be a non-empty array", () => {
-  assertRejects({ score_increments: [] }, "score_increments must be a non-empty array");
-  assertRejects({ score_increments: "1,2,3" }, "score_increments must be a non-empty array");
-  assertRejects({ score_increments: null }, "score_increments must be a non-empty array");
+  assertRejects(
+    { score_increments: [] },
+    "score_increments must be a non-empty array",
+  );
+  assertRejects(
+    { score_increments: "1,2,3" },
+    "score_increments must be a non-empty array",
+  );
+  assertRejects(
+    { score_increments: null },
+    "score_increments must be a non-empty array",
+  );
 });
 
 Deno.test("score_increments entries must all be positive integers", () => {

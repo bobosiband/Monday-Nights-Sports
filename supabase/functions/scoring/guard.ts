@@ -62,8 +62,7 @@ interface MatchAccessRow {
 export async function verifyMatchToken(
   request: Request,
   fixtureId: string,
-  lookup: (codeHash: string) => Promise<MatchAccessRow | null> =
-    defaultLookup,
+  lookup: (codeHash: string) => Promise<MatchAccessRow | null> = defaultLookup,
 ): Promise<MatchAccessContext | Response> {
   const bearer = extractBearer(request);
   if (!bearer) return unauthorized("Missing match code");

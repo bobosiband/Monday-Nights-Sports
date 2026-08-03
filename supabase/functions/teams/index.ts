@@ -130,7 +130,9 @@ serve(async (request) => {
       if (request.method === "GET") {
         const seasonId = new URL(request.url).searchParams.get("season");
         if (!seasonId || !isUuid(seasonId)) {
-          return jsonResponse({ error: "Query param 'season' (uuid) is required" }, 400);
+          return jsonResponse({
+            error: "Query param 'season' (uuid) is required",
+          }, 400);
         }
         const { data, error } = await supabase
           .from("teams")
@@ -143,7 +145,9 @@ serve(async (request) => {
 
       if (request.method === "POST") {
         const body = await readJson<CreateTeamBody>(request);
-        if (!body) return jsonResponse({ error: "Request body must be JSON" }, 400);
+        if (!body) {
+          return jsonResponse({ error: "Request body must be JSON" }, 400);
+        }
         if (!isUuid(body.season_id)) {
           return jsonResponse({ error: "season_id must be a uuid" }, 400);
         }
@@ -160,7 +164,9 @@ serve(async (request) => {
           .maybeSingle();
         if (dupeErr) throw dupeErr;
         if (dupe) {
-          return jsonResponse({ error: `Team '${name}' already exists in this season` }, 409);
+          return jsonResponse({
+            error: `Team '${name}' already exists in this season`,
+          }, 409);
         }
 
         const { data, error } = await supabase
@@ -181,24 +187,32 @@ serve(async (request) => {
         return jsonResponse({ error: "Method not allowed" }, 405);
       }
       const body = await readJson<BulkAddBody>(request);
-      if (!body) return jsonResponse({ error: "Request body must be JSON" }, 400);
+      if (!body) {
+        return jsonResponse({ error: "Request body must be JSON" }, 400);
+      }
       if (!isUuid(body.season_id)) {
         return jsonResponse({ error: "season_id must be a uuid" }, 400);
       }
       if (!Array.isArray(body.names) || body.names.length === 0) {
-        return jsonResponse({ error: "names must be a non-empty array of strings" }, 400);
+        return jsonResponse({
+          error: "names must be a non-empty array of strings",
+        }, 400);
       }
 
       const cleaned: string[] = [];
       for (const n of body.names) {
         const c = nonEmptyString(n);
         if (!c) {
-          return jsonResponse({ error: "Every name must be a non-empty string" }, 400);
+          return jsonResponse({
+            error: "Every name must be a non-empty string",
+          }, 400);
         }
         cleaned.push(c);
       }
 
-      const { unique, dropped: droppedInInput } = dedupeCaseInsensitive(cleaned);
+      const { unique, dropped: droppedInInput } = dedupeCaseInsensitive(
+        cleaned,
+      );
 
       const { data: existingRows, error: existingErr } = await supabase
         .from("teams")
@@ -206,7 +220,9 @@ serve(async (request) => {
         .eq("season_id", body.season_id);
       if (existingErr) throw existingErr;
       const existingLower = new Set(
-        (existingRows ?? []).map((r) => (r as { name: string }).name.toLowerCase()),
+        (existingRows ?? []).map((r) =>
+          (r as { name: string }).name.toLowerCase()
+        ),
       );
 
       const toInsert: string[] = [];
@@ -221,8 +237,12 @@ serve(async (request) => {
 
       let inserted: unknown[] = [];
       if (toInsert.length > 0) {
-        const rows = toInsert.map((name) => ({ season_id: body.season_id as string, name }));
-        const { data, error } = await supabase.from("teams").insert(rows).select();
+        const rows = toInsert.map((name) => ({
+          season_id: body.season_id as string,
+          name,
+        }));
+        const { data, error } = await supabase.from("teams").insert(rows)
+          .select();
         if (error) throw error;
         inserted = data ?? [];
       }
@@ -261,7 +281,9 @@ serve(async (request) => {
           .maybeSingle();
         if (dupeErr) throw dupeErr;
         if (dupe) {
-          return jsonResponse({ error: `Team '${name}' already exists in this season` }, 409);
+          return jsonResponse({
+            error: `Team '${name}' already exists in this season`,
+          }, 409);
         }
       }
 

@@ -66,8 +66,7 @@ export function validateRecordBody(
   if (typeof body.type !== "string" || !isGenericType(body.type)) {
     return {
       ok: false,
-      error:
-        "type must be one of: " + GENERIC_EVENT_TYPES.join(", ") +
+      error: "type must be one of: " + GENERIC_EVENT_TYPES.join(", ") +
         " (period_start/period_end go through /period)",
     };
   }
@@ -75,7 +74,10 @@ export function validateRecordBody(
 
   const teamId = validateTeamId(body.team_id, fixture, type);
   if (teamId === "invalid") {
-    return { ok: false, error: "team_id must be null or match the fixture's home/away team" };
+    return {
+      ok: false,
+      error: "team_id must be null or match the fixture's home/away team",
+    };
   }
   if (teamId === "required") {
     return { ok: false, error: `team_id is required for ${type} events` };
@@ -93,14 +95,18 @@ export function validateRecordBody(
     return { ok: false, error: "period must be a non-negative integer" };
   }
 
-  const clock = body.match_clock_ms === undefined || body.match_clock_ms === null
-    ? null
-    : nonNegativeInt(body.match_clock_ms);
+  const clock =
+    body.match_clock_ms === undefined || body.match_clock_ms === null
+      ? null
+      : nonNegativeInt(body.match_clock_ms);
   if (
     body.match_clock_ms !== undefined && body.match_clock_ms !== null &&
     clock === null
   ) {
-    return { ok: false, error: "match_clock_ms must be a non-negative integer" };
+    return {
+      ok: false,
+      error: "match_clock_ms must be a non-negative integer",
+    };
   }
 
   const valueResult = validateValue(body.value, type, config);
@@ -170,13 +176,20 @@ function validateValue(
 ): { ok: true; value: number | null } | { ok: false; error: string } {
   if (type === "score") {
     if (typeof raw !== "number" || !Number.isInteger(raw) || raw <= 0) {
-      return { ok: false, error: "value must be a positive integer for score events" };
-    }
-    const allowed = config.score_increments;
-    if (Array.isArray(allowed) && allowed.length > 0 && !allowed.includes(raw)) {
       return {
         ok: false,
-        error: `value ${raw} is not an allowed score increment (${allowed.join(", ")})`,
+        error: "value must be a positive integer for score events",
+      };
+    }
+    const allowed = config.score_increments;
+    if (
+      Array.isArray(allowed) && allowed.length > 0 && !allowed.includes(raw)
+    ) {
+      return {
+        ok: false,
+        error: `value ${raw} is not an allowed score increment (${
+          allowed.join(", ")
+        })`,
       };
     }
     return { ok: true, value: raw };
@@ -184,7 +197,10 @@ function validateValue(
 
   if (type === "card") {
     if (typeof raw !== "number" || !Number.isInteger(raw) || raw <= 0) {
-      return { ok: false, error: "value must be a positive integer for card events (severity)" };
+      return {
+        ok: false,
+        error: "value must be a positive integer for card events (severity)",
+      };
     }
     return { ok: true, value: raw };
   }

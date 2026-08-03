@@ -1,22 +1,23 @@
 # Monday Night Sports
 
-**Start here → [`docs/overview.md`](docs/overview.md).**
-**Setting up on your machine → [`docs/local-setup.md`](docs/local-setup.md).**
-**Interactive API docs (Swagger UI) → run the stack, then <http://127.0.0.1:54321/functions/v1/api-docs>.**
+**Start here → [`docs/overview.md`](docs/overview.md).** **Setting up on your
+machine → [`docs/local-setup.md`](docs/local-setup.md).** **Interactive API docs
+(Swagger UI) → run the stack, then
+<http://127.0.0.1:54321/functions/v1/api-docs>.**
 
-Supabase-native backend for a weekly college sports competition. Multiple
-sports run across four evening slots each Monday; this repo hosts the
-API/services that manage seasons, teams, fixtures, results, and (later)
-live scoring. The frontend team picks their stack separately — everything
-here is a self-contained API/service they can consume.
+Supabase-native backend for a weekly college sports competition. Multiple sports
+run across four evening slots each Monday; this repo hosts the API/services that
+manage seasons, teams, fixtures, results, and (later) live scoring. The frontend
+team picks their stack separately — everything here is a self-contained
+API/service they can consume.
 
 ## Stack
 
-- **Postgres** (via Supabase) — source of truth, with row-level security for
-  the public/organiser split.
-- **Supabase Edge Functions** (Deno + TypeScript) — one microservice per
-  folder under `supabase/functions/`. Shared code lives in `_shared/`
-  (Supabase does not deploy underscore-prefixed folders as functions).
+- **Postgres** (via Supabase) — source of truth, with row-level security for the
+  public/organiser split.
+- **Supabase Edge Functions** (Deno + TypeScript) — one microservice per folder
+  under `supabase/functions/`. Shared code lives in `_shared/` (Supabase does
+  not deploy underscore-prefixed folders as functions).
 - **Supabase Auth** — organiser sign-in; write endpoints require a valid JWT.
 
 ## Repository layout
@@ -87,15 +88,15 @@ supabase functions serve
 
 Environment variables the functions read:
 
-| Var | Purpose | Auto-set by CLI? |
-|---|---|---|
-| `SUPABASE_URL` | Postgres + Auth base URL | ✅ yes |
-| `SUPABASE_SERVICE_ROLE_KEY` | Bypass-RLS DB client used by every Edge Function | ✅ yes |
+| Var                         | Purpose                                          | Auto-set by CLI? |
+| --------------------------- | ------------------------------------------------ | ---------------- |
+| `SUPABASE_URL`              | Postgres + Auth base URL                         | ✅ yes           |
+| `SUPABASE_SERVICE_ROLE_KEY` | Bypass-RLS DB client used by every Edge Function | ✅ yes           |
 
-Match codes are opaque hashed values in the `match_access` table
-(see [`docs/decisions/0002-operator-access-model-v2.md`](docs/decisions/0002-operator-access-model-v2.md)),
-so there is no shared secret to configure. Every code lives in the DB
-and can be revoked instantly.
+Match codes are opaque hashed values in the `match_access` table (see
+[`docs/decisions/0002-operator-access-model-v2.md`](docs/decisions/0002-operator-access-model-v2.md)),
+so there is no shared secret to configure. Every code lives in the DB and can be
+revoked instantly.
 
 ## Deploying
 
