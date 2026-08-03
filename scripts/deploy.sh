@@ -15,6 +15,11 @@
 # entries in supabase/config.toml (public endpoints would otherwise return 401
 # on the hosted project). Leave unset on newer CLIs.
 #
+# --use-api is passed unconditionally: it tells the CLI to bundle the function
+# server-side instead of shelling out to a local Docker-based eszip pipeline.
+# The Docker path fails with "failed to open eszip: ENOENT" on some CLI
+# versions (observed on 2.109.1). Server-side bundling is also faster.
+#
 # Everything this script needs assumes the operator has already run
 # `supabase login` in a browser at least once — the CLI can't do that itself.
 
@@ -44,7 +49,7 @@ FUNCTIONS=(
   api-docs
 )
 
-DEPLOY_FLAGS=()
+DEPLOY_FLAGS=(--use-api)
 if [[ "${NO_VERIFY_JWT:-}" == "1" ]]; then
   DEPLOY_FLAGS+=(--no-verify-jwt)
   echo "note: NO_VERIFY_JWT=1 — appending --no-verify-jwt to every function deploy"
