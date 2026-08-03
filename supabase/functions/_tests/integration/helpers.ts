@@ -68,16 +68,17 @@ export function skipUnlessIntegration(
 }
 
 /**
- * Create (or reuse) a Supabase Auth user and return an access token for it.
- * Uses the admin API + password grant so the test has full control of the
- * lifecycle; the existing `requireOrganiser` guard treats any authenticated
- * user as an organiser (see _shared/auth.ts).
+ * Sign up (or sign back in) a Supabase Auth user and return an access token.
+ * Local Supabase has `enable_confirmations = false`, so a plain signup on the
+ * anon endpoint yields a confirmed user with an access token in a single call.
+ * If the user already exists from a prior run we fall back to password grant.
  *
- * The email is derived from the caller-supplied label so parallel test files
- * don't collide on the same account.
+ * The existing `requireOrganiser` guard treats any authenticated user as an
+ * organiser (see _shared/auth.ts), so no role plumbing is required.
  *
  * @param env - Integration env bundle from `integrationEnv()`.
- * @param label - Short slug used to build a stable email.
+ * @param label - Short slug used to build a stable email so parallel test
+ *                files don't collide.
  * @returns A short-lived access token usable as `Bearer <jwt>`.
  */
 export async function organiserJwt(
@@ -87,18 +88,22 @@ export async function organiserJwt(
   const email = `test-${label}@example.com`;
   const password = "integration-test-password-1";
 
-  // Best-effort create; ignore 4xx (user probably already exists from a prior
-  // run). Auth admin endpoints are idempotent-ish but explicit is clearer.
-  await fetch(`${env.url}/auth/v1/admin/users`, {
+  const signupRes = await fetch(`${env.url}/auth/v1/signup`, {
     method: "POST",
     headers: {
-      "authorization": `Bearer ${env.serviceRoleKey}`,
-      "apikey": env.serviceRoleKey,
+      "apikey": env.anonKey,
       "content-type": "application/json",
     },
-    body: JSON.stringify({ email, password, email_confirm: true }),
+    body: JSON.stringify({ email, password }),
   });
+  const signupBody = await signupRes.json().catch(() => ({}));
 
+  if (signupRes.ok && signupBody?.access_token) {
+    return signupBody.access_token as string;
+  }
+
+  // Signup rejected (usually because the user already exists from a previous
+  // run in this same DB) — fall back to password grant.
   const signInRes = await fetch(
     `${env.url}/auth/v1/token?grant_type=password`,
     {
@@ -110,28 +115,69 @@ export async function organiserJwt(
       body: JSON.stringify({ email, password }),
     },
   );
-
+  const signInText = await signInRes.text();
   if (!signInRes.ok) {
     throw new Error(
-      `organiser sign-in failed: ${signInRes.status} ${await signInRes.text()}`,
+      `organiser sign-in failed: ${signInRes.status} ${signInText}` +
+        ` (signup response was: ${signupRes.status} ${
+          JSON.stringify(signupBody)
+        })`,
     );
   }
-  const body = await signInRes.json() as { access_token?: string };
-  if (!body.access_token) {
-    throw new Error("organiser sign-in returned no access_token");
+  const parsed = JSON.parse(signInText) as { access_token?: string };
+  if (!parsed.access_token) {
+    throw new Error(
+      `organiser sign-in returned no access_token: ${signInText}`,
+    );
   }
-  return body.access_token;
+  return parsed.access_token;
 }
 
-/** Small wrapper around fetch that attaches the anon apikey header. */
-export function apiFetch(
+/**
+ * Response wrapper that consumes the body exactly once and exposes it as both
+ * text and (lazily) parsed JSON. Solves the "Body already consumed" trap when
+ * a test wants the raw text in an assertion message *and* the parsed JSON on
+ * success.
+ */
+export interface CapturedResponse {
+  status: number;
+  text: string;
+  /** Parses `text` as JSON. Throws with the raw body on parse failure. */
+  json<T = unknown>(): T;
+}
+
+/**
+ * Wrapper around fetch that attaches the anon apikey header and captures the
+ * response body immediately.
+ *
+ * @param env - Integration env bundle.
+ * @param path - Path under `/functions/v1`, e.g. `/scoring/<uuid>/start`.
+ * @param init - Standard `fetch` options; `headers` are merged with `apikey`.
+ * @returns A `CapturedResponse` with the body already read.
+ */
+export async function apiFetch(
   env: { url: string; anonKey: string },
   path: string,
   init: RequestInit = {},
-): Promise<Response> {
+): Promise<CapturedResponse> {
   const headers = new Headers(init.headers);
   headers.set("apikey", env.anonKey);
-  return fetch(`${env.url}/functions/v1${path}`, { ...init, headers });
+  const res = await fetch(`${env.url}/functions/v1${path}`, {
+    ...init,
+    headers,
+  });
+  const text = await res.text();
+  return {
+    status: res.status,
+    text,
+    json<T = unknown>(): T {
+      try {
+        return JSON.parse(text) as T;
+      } catch {
+        throw new Error(`Response was not JSON: ${text}`);
+      }
+    },
+  };
 }
 
 /** UUID v4 for event ids the scoring service can dedupe on. */
