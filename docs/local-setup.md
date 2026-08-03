@@ -195,7 +195,7 @@ WSL2, Linux). Windows equivalents follow.
 Pure-logic tests — no DB required. Same command on every platform:
 
 ```bash
-deno test --allow-net supabase/functions/_tests/
+deno task test   # or: deno test --allow-net --allow-env supabase/functions/_tests/
 ```
 
 You should see roughly:
@@ -224,7 +224,7 @@ Coverage (Sprints 1 → C/D/E):
   bye distribution, determinism).
 
 ```bash
-deno test --allow-net supabase/functions/_tests/
+deno task test   # or: deno test --allow-net --allow-env supabase/functions/_tests/
 ```
 
 Type-check the whole service (no execution):
@@ -232,6 +232,39 @@ Type-check the whole service (no execution):
 ```bash
 deno check supabase/functions/scoring/index.ts
 ```
+
+---
+
+## Continuous integration
+
+Every push to `main` and every pull request runs
+[`.github/workflows/ci.yml`](../.github/workflows/ci.yml). Four jobs, chosen so
+a failing build names the actual thing that broke:
+
+| Job            | What it runs                                                                                                | Why it exists                                                                                                                                             |
+| -------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `static`       | `deno fmt --check`, `deno lint`, `deno check` on every function entrypoint                                  | Cheap, catches style + type drift in seconds.                                                                                                             |
+| `unit`         | `deno task test`                                                                                            | The 140+ unit tests. Skips the integration folder because `INTEGRATION` isn't set.                                                                        |
+| `openapi-sync` | Re-runs `scripts/sync-openapi.sh` and fails if `supabase/functions/api-docs/openapi.ts` moved               | Guarantees the served Swagger UI matches `docs/openapi.yaml`.                                                                                             |
+| `database`     | `supabase start` → `supabase db reset` → integration tests under `_tests/integration/` with `INTEGRATION=1` | Only job that boots real Postgres, so the only job that would have caught the `permission denied for table fixtures` bug called out in `0003_grants.sql`. |
+
+Branch protection on `main` should require all four checks — this has to be
+enabled in the GitHub UI by a repo admin; the workflow can't set it itself.
+
+### Running the integration tests locally
+
+Optional, needs Docker + `supabase start`. From `supabase status`, grab the anon
+and service-role keys, then:
+
+```bash
+export SUPABASE_ANON_KEY=...          # from `supabase status`
+export SUPABASE_SERVICE_ROLE_KEY=...  # from `supabase status`
+supabase db reset                      # apply migrations + seed
+deno task test:integration
+```
+
+The task exports `INTEGRATION=1` for you. Without that flag the same tests are
+skipped (green) so day-to-day `deno task test` stays fast and DB-free.
 
 ---
 
@@ -382,7 +415,7 @@ supabase stop         # shut it down (containers stopped, data preserved)
 supabase stop --backup=false   # ... and drop the DB volume too
 supabase status       # print URLs + keys of the running stack
 supabase db reset     # drop DB, reapply all migrations + seed
-deno test --allow-net supabase/functions/_tests/
+deno task test   # or: deno test --allow-net --allow-env supabase/functions/_tests/
 ```
 
 ---
