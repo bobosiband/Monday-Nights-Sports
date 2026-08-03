@@ -108,7 +108,8 @@ Deno.test("scoring smoke — mint, score, undo, live, finalize, replay guard", a
         value: 1,
       }),
     });
-    assertStatus(res, 200, "home goal");
+    // scoring/events returns 201 when it inserts, 200 when it replays.
+    assertStatus(res, 201, "home goal");
     const body = res.json<{ inserted: boolean; derived: { home: number } }>();
     assertEquals(body.inserted, true);
     assertEquals(body.derived.home, 1);
@@ -145,7 +146,7 @@ Deno.test("scoring smoke — mint, score, undo, live, finalize, replay guard", a
         team_id: AWAY_TEAM,
       }),
     });
-    assertStatus(res, 200, "foul");
+    assertStatus(res, 201, "foul");
   });
 
   await t.step("undo the foul", async () => {
