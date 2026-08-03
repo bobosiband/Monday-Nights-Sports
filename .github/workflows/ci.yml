@@ -47,6 +47,8 @@ jobs:
         with:
           deno-version: v2.x
       - name: deno test
+        # Integration tests under _tests/integration/ skip themselves unless
+        # INTEGRATION=1 is set, so this run stays DB-free.
         run: deno task test
 
   openapi-sync:
