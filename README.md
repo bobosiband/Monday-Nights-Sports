@@ -34,7 +34,10 @@ monday-night-sports/
 │   ├── sprints-c-d-e.md                # Sprints C/D/E running log
 │   └── decisions/                      # ADRs (0001-0005)
 ├── scripts/
-│   ├── smoke-live.sh                   # end-to-end smoke walkthrough
+│   ├── deploy.sh                       # one-command hosted deploy
+│   ├── seed-remote.sh                  # psql wrapper for hosted seeding
+│   ├── smoke-remote.sh                 # smoke walkthrough against any base URL
+│   ├── smoke-live.sh                   # local smoke walkthrough
 │   ├── rebuild-live-state.sql          # rebuild the realtime projection
 │   ├── sync-openapi.sh                 # embed openapi.yaml into api-docs
 │   └── regenerate-tracking.sh          # regenerate GitHub milestones/stories
@@ -64,7 +67,8 @@ monday-night-sports/
         ├── seasons/                    # organiser: season management
         ├── sport-configs/              # organiser: per-sport config CRUD
         ├── standings/                  # public standings (per season, per sport)
-        └── teams/                      # organiser: team management
+        ├── teams/                      # organiser: team management
+        └── _tests/                     # deno test suite (unit + integration)
 ```
 
 ## Prerequisites
@@ -100,29 +104,17 @@ revoked instantly.
 
 ## Deploying
 
+Deploy is one command:
+
 ```bash
-supabase link --project-ref <your-project-ref>
-supabase db push
-
-# Public reads
-supabase functions deploy fixtures-public
-supabase functions deploy live
-supabase functions deploy standings
-supabase functions deploy results-public
-
-# Organiser writes (Supabase Auth JWT)
-supabase functions deploy seasons
-supabase functions deploy teams
-supabase functions deploy sport-configs
-supabase functions deploy match-access
-
-# Match-code-gated scoring
-supabase functions deploy scoring
-
-# Interactive docs (Swagger UI)
-./scripts/sync-openapi.sh
-supabase functions deploy api-docs
+PROJECT_REF=<your-project-ref> ./scripts/deploy.sh
 ```
+
+That syncs the OpenAPI blob, applies pending migrations, and redeploys every
+function. Full first-time walkthrough (seeding, secrets, organiser user, smoke
+test, guard verification) is in [`docs/deploy.md`](docs/deploy.md);
+[`docs/production-deploy-checklist.md`](docs/production-deploy-checklist.md) is
+the verification checklist that goes with it.
 
 ## Sprint status
 
