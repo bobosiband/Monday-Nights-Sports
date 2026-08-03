@@ -1,0 +1,88 @@
+# -----------------------------------------------------------------------------
+# CI — Monday Night Sports
+#
+# Runs on every push to main and every pull request. Four independent jobs so
+# a failure names the actual thing that broke:
+#
+#   static        deno fmt --check, deno lint, per-function deno check
+#   unit          deno test on supabase/functions/_tests/  (no DB, seconds)
+#   openapi-sync  regenerates api-docs/openapi.ts and fails if it drifts
+#   database      supabase start → db reset → integration tests against the
+#                 live local stack. Slower, but the only job that catches the
+#                 kind of grants/RLS bug called out in 0003_grants.sql.
+#
+# Ask the repo owner to require all four checks in the main-branch protection
+# rule; this workflow can't set that itself.
+# -----------------------------------------------------------------------------
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  static:
+    name: Static checks (fmt + lint + type-check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: deno fmt --check
+        run: deno fmt --check
+      - name: deno lint
+        run: deno lint
+      - name: Type-check every function entrypoint
+        run: deno task check
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: deno test
+        run: deno task test
+
+  openapi-sync:
+    name: OpenAPI spec is in sync
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Regenerate openapi.ts from openapi.yaml
+        run: ./scripts/sync-openapi.sh
+      - name: Fail if the generated spec drifted
+        run: git diff --exit-code supabase/functions/api-docs/openapi.ts
+
+  database:
+    name: Database + integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Boot the local stack
+        # Skip services we don't need for CI: web studio, image proxy, mail
+        # catcher, and the vector log pipeline. If exclusion names ever change
+        # in the CLI, drop the `-x` flag — a full `supabase start` is slower
+        # but always works.
+        run: supabase start -x studio,imgproxy,inbucket,vector
+      - name: Apply migrations + seed
+        run: supabase db reset
+      - name: Integration tests
+        env:
+          INTEGRATION: "1"
+          SUPABASE_URL: http://127.0.0.1:54321
+        run: deno test --allow-net --allow-env supabase/functions/_tests/integration/
