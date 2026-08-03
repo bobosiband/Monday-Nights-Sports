@@ -83,6 +83,19 @@ jobs:
         run: supabase start -x studio,imgproxy,inbucket,vector
       - name: Apply migrations + seed
         run: supabase db reset
+      - name: Export Supabase keys to the job env
+        # `supabase status -o env` prints ANON_KEY / SERVICE_ROLE_KEY / …;
+        # rename the two we need with --override-name so downstream steps can
+        # read them as SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY, strip
+        # the surrounding quotes, and append to $GITHUB_ENV.
+        run: |
+          supabase status \
+            --override-name auth.anon_key=SUPABASE_ANON_KEY \
+            --override-name auth.service_role_key=SUPABASE_SERVICE_ROLE_KEY \
+            -o env \
+            | grep -E '^SUPABASE_(ANON_KEY|SERVICE_ROLE_KEY)=' \
+            | sed 's/"//g' \
+            >> "$GITHUB_ENV"
       - name: Integration tests
         env:
           INTEGRATION: "1"
