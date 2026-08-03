@@ -9,7 +9,8 @@
   "fmt": {
     "exclude": [
       "supabase/functions/api-docs/openapi.ts",
-      "docs/openapi.yaml"
+      "docs/openapi.yaml",
+      "docs/archive/"
     ]
   },
   "lint": {
