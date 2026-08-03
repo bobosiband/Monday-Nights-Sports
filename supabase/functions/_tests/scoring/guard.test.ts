@@ -35,7 +35,10 @@ const CODE = "DEVCODE1";
 function req(code?: string): Request {
   const headers: Record<string, string> = {};
   if (code !== undefined) headers.authorization = `Bearer ${code}`;
-  return new Request("http://test/scoring/f/start", { method: "POST", headers });
+  return new Request("http://test/scoring/f/start", {
+    method: "POST",
+    headers,
+  });
 }
 
 /** A convenience: build a `lookup` that returns a fixed row for one hash. */
@@ -54,7 +57,11 @@ function lookupFor(
 // ---------- 401 paths ------------------------------------------------------
 
 Deno.test("guard: missing Authorization header → 401", async () => {
-  const res = await verifyMatchToken(req(), FIXTURE, () => Promise.resolve(null));
+  const res = await verifyMatchToken(
+    req(),
+    FIXTURE,
+    () => Promise.resolve(null),
+  );
   if (!(res instanceof Response)) throw new Error("expected Response");
   assertEquals(res.status, 401);
 });

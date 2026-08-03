@@ -8,7 +8,10 @@
 // with the auth guard in `_shared/auth.ts` before touching the database.
 // -----------------------------------------------------------------------------
 
-import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
+import {
+  createClient,
+  SupabaseClient,
+} from "https://esm.sh/@supabase/supabase-js@2.45.4";
 
 /**
  * Read a required environment variable or throw with a clear message. Edge

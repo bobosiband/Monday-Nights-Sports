@@ -20,11 +20,7 @@
 // -----------------------------------------------------------------------------
 
 import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
-import {
-  corsHeaders,
-  handlePreflight,
-  jsonResponse,
-} from "../_shared/cors.ts";
+import { corsHeaders, handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase-client.ts";
 import {
   type PublicEvent,
@@ -38,7 +34,9 @@ interface FixtureRow {
   id: string;
   sport: string;
   status: "scheduled" | "live" | "complete" | "cancelled";
-  slots: { slot_number: number; starts_at: string; pitch: string | null } | null;
+  slots:
+    | { slot_number: number; starts_at: string; pitch: string | null }
+    | null;
   home_team: { name: string } | null;
   away_team: { name: string } | null;
 }
@@ -52,8 +50,16 @@ interface EventRow {
 }
 
 /** DB-shape rows for the two score sources. */
-interface LiveStateRow { fixture_id: string; home_score: number; away_score: number }
-interface ResultRow { fixture_id: string; home_score: number; away_score: number }
+interface LiveStateRow {
+  fixture_id: string;
+  home_score: number;
+  away_score: number;
+}
+interface ResultRow {
+  fixture_id: string;
+  home_score: number;
+  away_score: number;
+}
 
 /**
  * Load a published event + its fixtures + score rows in the minimum
@@ -89,7 +95,9 @@ async function loadPublicEvent(eventId: string): Promise<
     .eq("event_id", eventId);
   if (fixturesError) throw fixturesError;
   const rows = (fixtures ?? []) as unknown as FixtureRow[];
-  rows.sort((a, b) => (a.slots?.slot_number ?? 0) - (b.slots?.slot_number ?? 0));
+  rows.sort((a, b) =>
+    (a.slots?.slot_number ?? 0) - (b.slots?.slot_number ?? 0)
+  );
 
   const ids = rows.map((r) => r.id);
 
@@ -109,12 +117,11 @@ async function loadPublicEvent(eventId: string): Promise<
     // Prefer results (locked-in final) over live-state (in-flight cache).
     const result = resultMap.get(row.id);
     const live = liveMap.get(row.id);
-    const score =
-      result
-        ? { home: result.home_score, away: result.away_score }
-        : live
-        ? { home: live.home_score, away: live.away_score }
-        : null;
+    const score = result
+      ? { home: result.home_score, away: result.away_score }
+      : live
+      ? { home: live.home_score, away: live.away_score }
+      : null;
 
     return {
       id: row.id,
@@ -201,7 +208,10 @@ serve(async (request) => {
     if (format === "text") {
       return new Response(renderText(result.event, result.fixtures), {
         status: 200,
-        headers: { ...corsHeaders, "content-type": "text/plain; charset=utf-8" },
+        headers: {
+          ...corsHeaders,
+          "content-type": "text/plain; charset=utf-8",
+        },
       });
     }
 

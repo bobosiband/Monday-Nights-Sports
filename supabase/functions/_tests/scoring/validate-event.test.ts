@@ -8,10 +8,7 @@
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { validateRecordBody } from "../../scoring/validate-event.ts";
-import type {
-  FixtureContext,
-  SportConfig,
-} from "../../scoring/types.ts";
+import type { FixtureContext, SportConfig } from "../../scoring/types.ts";
 
 const FIXTURE_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const EVENT_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";
@@ -29,7 +26,10 @@ const fixture: FixtureContext = {
 };
 
 const soccerConfig: SportConfig = { score_increments: [1], track_fouls: true };
-const basketballConfig: SportConfig = { score_increments: [1, 2, 3], track_fouls: false };
+const basketballConfig: SportConfig = {
+  score_increments: [1, 2, 3],
+  track_fouls: false,
+};
 
 Deno.test("rejects a null body", () => {
   const result = validateRecordBody(null, fixture, soccerConfig);

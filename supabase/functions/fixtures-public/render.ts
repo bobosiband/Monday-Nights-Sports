@@ -118,7 +118,10 @@ export function fixtureAsTextLine(fixture: PublicFixture): string {
   let match: string;
   if (!away) {
     match = `${home} (bye)`;
-  } else if (fixture.score && (fixture.status === "live" || fixture.status === "complete")) {
+  } else if (
+    fixture.score &&
+    (fixture.status === "live" || fixture.status === "complete")
+  ) {
     // Use an en-dash between scores so it's not confused with a range
     // separator or a hyphenated word.
     match = `${home} ${fixture.score.home}–${fixture.score.away} ${away}`;
@@ -126,7 +129,9 @@ export function fixtureAsTextLine(fixture: PublicFixture): string {
     match = `${home} vs ${away}`;
   }
 
-  return `Slot ${slot?.slot_number ?? "?"} — ${time}${pitch} — ${fixture.sport}: ${match}${badgeSuffix}`;
+  return `Slot ${
+    slot?.slot_number ?? "?"
+  } — ${time}${pitch} — ${fixture.sport}: ${match}${badgeSuffix}`;
 }
 
 /**
@@ -138,7 +143,10 @@ export function fixtureAsTextLine(fixture: PublicFixture): string {
  * @param fixtures - Ordered fixtures.
  * @returns A UTF-8 string ready for a text/plain response.
  */
-export function renderText(event: PublicEvent, fixtures: PublicFixture[]): string {
+export function renderText(
+  event: PublicEvent,
+  fixtures: PublicFixture[],
+): string {
   const seasonName = event.season_name ?? "Season";
   const header = `${seasonName} — ${event.event_date}\nTonight's draw\n`;
   const body = fixtures.map(fixtureAsTextLine).join("\n");
@@ -184,7 +192,9 @@ export function renderFixtureCard(fixture: PublicFixture): string {
     ? "badge badge-cancelled"
     : "";
   const badge = badgeClass
-    ? `<span class="${badgeClass}" role="status" aria-label="${statusLabel(fixture.status)}">${statusLabel(fixture.status)}</span>`
+    ? `<span class="${badgeClass}" role="status" aria-label="${
+      statusLabel(fixture.status)
+    }">${statusLabel(fixture.status)}</span>`
     : "";
 
   return `
@@ -203,7 +213,10 @@ export function renderFixtureCard(fixture: PublicFixture): string {
  * @param fixtures - Ordered fixtures.
  * @returns Full HTML document.
  */
-export function renderHtml(event: PublicEvent, fixtures: PublicFixture[]): string {
+export function renderHtml(
+  event: PublicEvent,
+  fixtures: PublicFixture[],
+): string {
   const seasonName = event.season_name ?? "Season";
   const title = `${escapeHtml(seasonName)} — ${escapeHtml(event.event_date)}`;
   const rows = fixtures.map(renderFixtureCard).join("");

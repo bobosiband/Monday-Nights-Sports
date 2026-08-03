@@ -240,7 +240,10 @@ async function handleFixture(fixtureId: string): Promise<Response> {
   }
   const fixture = await loadFixture(fixtureId);
   if (!fixture) {
-    return jsonResponse({ error: "Fixture not found or event not published" }, 404);
+    return jsonResponse(
+      { error: "Fixture not found or event not published" },
+      404,
+    );
   }
 
   const supabase = createServiceClient();
@@ -253,7 +256,9 @@ async function handleFixture(fixtureId: string): Promise<Response> {
     .maybeSingle();
   if (error) throw error;
 
-  return jsonResponse(toSummary(fixture, (live as LiveStateRow | null) ?? null));
+  return jsonResponse(
+    toSummary(fixture, (live as LiveStateRow | null) ?? null),
+  );
 }
 
 /**

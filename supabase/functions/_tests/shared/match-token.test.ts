@@ -8,7 +8,10 @@
 // Run with: `deno test supabase/functions/_tests/`
 // -----------------------------------------------------------------------------
 
-import { assertEquals, assertNotEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import {
+  assertEquals,
+  assertNotEquals,
+} from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   extractBearer,
   generateMatchCode,
@@ -149,7 +152,10 @@ Deno.test("hashMatchCode: matches the seed's pinned digest for 'DEVCODE1'", asyn
 function requestWith(headerValue?: string): Request {
   const headers: Record<string, string> = {};
   if (headerValue !== undefined) headers.authorization = headerValue;
-  return new Request("http://test/scoring/f/start", { method: "POST", headers });
+  return new Request("http://test/scoring/f/start", {
+    method: "POST",
+    headers,
+  });
 }
 
 Deno.test("extractBearer: pulls the value after Bearer", () => {

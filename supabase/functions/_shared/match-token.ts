@@ -36,8 +36,8 @@
  *   - U   omitted so a code can't accidentally spell something offensive
  * The remaining 30 characters are safe to read aloud across a noisy pitch.
  */
-export const MATCH_CODE_ALPHABET =
-  "0123456789ABCDEFGHJKMNPQRSTVWXYZ".replaceAll("U", "");
+export const MATCH_CODE_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
+  .replaceAll("U", "");
 // After the replace the string is 31 chars (0-9 + 22 letters). We reject-
 // sample from that pool to keep the distribution uniform. See generate().
 

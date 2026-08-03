@@ -21,7 +21,10 @@
  * `_shared/validate.ts` and `scoring/validate-event.ts` so callers can
  * pattern-match uniformly.
  */
-export type Validated<T> = { ok: true; value: T } | { ok: false; error: string };
+export type Validated<T> = { ok: true; value: T } | {
+  ok: false;
+  error: string;
+};
 
 /**
  * Validate the `config` JSONB from a `sport-configs` request body.

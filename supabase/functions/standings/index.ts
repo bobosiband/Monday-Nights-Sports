@@ -83,19 +83,21 @@ async function loadFinishedFixtures(seasonId: string): Promise<FinishedRow[]> {
   if (error) throw error;
 
   const rows: FinishedRow[] = [];
-  for (const raw of (data ?? []) as unknown as Array<{
-    id: string;
-    sport: string;
-    home_team_id: string;
-    away_team_id: string | null;
-    home_team: { name: string } | null;
-    away_team: { name: string } | null;
-    events: { season_id: string } | { season_id: string }[] | null;
-    results:
-      | { home_score: number; away_score: number }
-      | { home_score: number; away_score: number }[]
-      | null;
-  }>) {
+  for (
+    const raw of (data ?? []) as unknown as Array<{
+      id: string;
+      sport: string;
+      home_team_id: string;
+      away_team_id: string | null;
+      home_team: { name: string } | null;
+      away_team: { name: string } | null;
+      events: { season_id: string } | { season_id: string }[] | null;
+      results:
+        | { home_score: number; away_score: number }
+        | { home_score: number; away_score: number }[]
+        | null;
+    }>
+  ) {
     // Filter by season here rather than in the query — the join makes
     // that awkward and the fixture set per season is small enough.
     const seasonFromRow = Array.isArray(raw.events)
@@ -139,7 +141,9 @@ async function loadConfigsBySport(
     .eq("season_id", seasonId);
   if (error) throw error;
   const out = new Map<string, SportConfig>();
-  for (const r of (data ?? []) as Array<{ sport: string; config: SportConfig }>) {
+  for (
+    const r of (data ?? []) as Array<{ sport: string; config: SportConfig }>
+  ) {
     out.set(r.sport, r.config ?? {});
   }
   return out;

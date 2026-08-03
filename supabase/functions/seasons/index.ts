@@ -121,7 +121,9 @@ function validateCreate(
   const sports: string[] = [];
   for (const s of body.sports) {
     const cleaned = nonEmptyString(s, 60);
-    if (!cleaned) return { ok: false, error: "sports entries must be non-empty strings" };
+    if (!cleaned) {
+      return { ok: false, error: "sports entries must be non-empty strings" };
+    }
     sports.push(cleaned);
   }
 
@@ -133,7 +135,9 @@ function validateCreate(
     return { ok: false, error: "ends_on must be on or after starts_on" };
   }
 
-  const is_active = typeof body.is_active === "boolean" ? body.is_active : false;
+  const is_active = typeof body.is_active === "boolean"
+    ? body.is_active
+    : false;
 
   return { ok: true, value: { name, sports, starts_on, ends_on, is_active } };
 }
@@ -160,12 +164,17 @@ function validateUpdate(
 
   if (body.sports !== undefined) {
     if (!Array.isArray(body.sports) || body.sports.length === 0) {
-      return { ok: false, error: "sports must be a non-empty array of strings" };
+      return {
+        ok: false,
+        error: "sports must be a non-empty array of strings",
+      };
     }
     const sports: string[] = [];
     for (const s of body.sports) {
       const cleaned = nonEmptyString(s, 60);
-      if (!cleaned) return { ok: false, error: "sports entries must be non-empty strings" };
+      if (!cleaned) {
+        return { ok: false, error: "sports entries must be non-empty strings" };
+      }
       sports.push(cleaned);
     }
     patch.sports = sports;

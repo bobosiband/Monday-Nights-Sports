@@ -1,24 +1,24 @@
 # Local development setup
 
-Everything you need to run the Monday Night Sports backend on your own
-machine and exercise the scoring service end-to-end.
+Everything you need to run the Monday Night Sports backend on your own machine
+and exercise the scoring service end-to-end.
 
-Covers **macOS, Windows (PowerShell + WSL2), and Linux**. Look for the
-tab-like headings under each install step.
+Covers **macOS, Windows (PowerShell + WSL2), and Linux**. Look for the tab-like
+headings under each install step.
 
-New to the project? Start with [`overview.md`](overview.md), then come
-back here.
+New to the project? Start with [`overview.md`](overview.md), then come back
+here.
 
 ---
 
 ## What you're setting up
 
-- **Postgres 15** (in Docker, via the Supabase CLI) — seasons, teams,
-  events, fixtures, match_events, results, etc.
+- **Postgres 15** (in Docker, via the Supabase CLI) — seasons, teams, events,
+  fixtures, match_events, results, etc.
 - **Edge Functions runtime** — Deno-based, serves the code under
   `supabase/functions/` at `http://127.0.0.1:54321/functions/v1/`.
-- **Studio** at `http://127.0.0.1:54323` — a web UI for inspecting the DB
-  and running SQL. Use this liberally while you're learning the schema.
+- **Studio** at `http://127.0.0.1:54323` — a web UI for inspecting the DB and
+  running SQL. Use this liberally while you're learning the schema.
 
 You do **not** need a hosted Supabase account for local dev.
 
@@ -26,16 +26,16 @@ You do **not** need a hosted Supabase account for local dev.
 
 ## Prerequisites (all platforms)
 
-| Tool | Why | Version |
-|---|---|---|
-| Docker | Supabase runs its stack in containers | Any recent |
-| Supabase CLI | Boots the stack, migrations, functions | ≥ 2.109 |
-| Deno | Runs the unit tests | ≥ 2 |
-| git, curl, jq | Basic dev tooling | Any recent |
+| Tool          | Why                                    | Version    |
+| ------------- | -------------------------------------- | ---------- |
+| Docker        | Supabase runs its stack in containers  | Any recent |
+| Supabase CLI  | Boots the stack, migrations, functions | ≥ 2.109    |
+| Deno          | Runs the unit tests                    | ≥ 2        |
+| git, curl, jq | Basic dev tooling                      | Any recent |
 
-Windows users: install everything **inside WSL2 (Ubuntu)** if you can —
-it's the most compatible path. Native-Windows notes are included where
-they differ, but Docker + Supabase behaves best on Linux/macOS.
+Windows users: install everything **inside WSL2 (Ubuntu)** if you can — it's the
+most compatible path. Native-Windows notes are included where they differ, but
+Docker + Supabase behaves best on Linux/macOS.
 
 ---
 
@@ -53,9 +53,9 @@ docker info | head -5   # look for "Server Version"
 ### Windows
 
 Install **Docker Desktop with WSL2 backend**:
-https://docs.docker.com/desktop/install/windows-install/
-Enable WSL2 integration for your Ubuntu distro in Docker Desktop
-settings → Resources → WSL Integration. Verify from inside WSL2:
+https://docs.docker.com/desktop/install/windows-install/ Enable WSL2 integration
+for your Ubuntu distro in Docker Desktop settings → Resources → WSL Integration.
+Verify from inside WSL2:
 
 ```bash
 docker info | head -5
@@ -73,18 +73,18 @@ docker info | head -5            # should print "Server Version"
 
 ### Linux (Fedora / Arch / others)
 
-Use your distro's package (`dnf install moby-engine`, `pacman -S docker`,
-etc.), enable + start the daemon (`sudo systemctl enable --now docker`),
-add yourself to the `docker` group.
+Use your distro's package (`dnf install moby-engine`, `pacman -S docker`, etc.),
+enable + start the daemon (`sudo systemctl enable --now docker`), add yourself
+to the `docker` group.
 
 ---
 
 ## Installing the Supabase CLI
 
-Version 2.109+ ships as a shim (`supabase`) **plus** a Go binary
-(`supabase-go`) that must live in the same directory. Moving just the
-shim onto PATH will fail with `Could not find the supabase-go binary`.
-Use one of the paths below — each keeps the pair together.
+Version 2.109+ ships as a shim (`supabase`) **plus** a Go binary (`supabase-go`)
+that must live in the same directory. Moving just the shim onto PATH will fail
+with `Could not find the supabase-go binary`. Use one of the paths below — each
+keeps the pair together.
 
 ### macOS (recommended: Homebrew)
 
@@ -175,19 +175,18 @@ supabase db reset     # applies migrations 0001–0004 + seed.sql
 supabase status       # prints ANON_KEY / SERVICE_ROLE_KEY / API URLs
 ```
 
-`supabase start` also serves the Edge Functions automatically — the
-routes under `supabase/functions/*` are live at
-`http://127.0.0.1:54321/functions/v1/<function-name>`. You usually **do
-not** need to run `supabase functions serve` unless you're actively
-editing a function and want hot-reload.
+`supabase start` also serves the Edge Functions automatically — the routes under
+`supabase/functions/*` are live at
+`http://127.0.0.1:54321/functions/v1/<function-name>`. You usually **do not**
+need to run `supabase functions serve` unless you're actively editing a function
+and want hot-reload.
 
 ### Windows note
 
-On native Windows PowerShell, use `curl.exe` (or `Invoke-RestMethod`) for
-the smoke test — the built-in `curl` alias points to
-`Invoke-WebRequest` and takes different flags. The examples below
-assume a bash-style shell (macOS Terminal, WSL2, Linux). Windows
-equivalents follow.
+On native Windows PowerShell, use `curl.exe` (or `Invoke-RestMethod`) for the
+smoke test — the built-in `curl` alias points to `Invoke-WebRequest` and takes
+different flags. The examples below assume a bash-style shell (macOS Terminal,
+WSL2, Linux). Windows equivalents follow.
 
 ---
 
@@ -209,15 +208,20 @@ Coverage (Sprints 1 → C/D/E):
 
 - `_tests/shared/score.test.ts` — the `deriveScore` fold.
 - `_tests/shared/score-mixed.test.ts` — scores + fouls + cards together.
-- `_tests/shared/match-token.test.ts` — code generator, normalisation, SHA-256 hasher, bearer extractor.
-- `_tests/shared/standings.test.ts` — points / tiebreakers / byes / config permutations.
+- `_tests/shared/match-token.test.ts` — code generator, normalisation, SHA-256
+  hasher, bearer extractor.
+- `_tests/shared/standings.test.ts` — points / tiebreakers / byes / config
+  permutations.
 - `_tests/scoring/validate-event.test.ts` — request-body validation.
 - `_tests/scoring/period-state.test.ts` — `periodIsOpen` helper.
 - `_tests/scoring/period-breakdown.test.ts` — finalize's period fold.
-- `_tests/scoring/guard.test.ts` — verifyMatchToken: expired / revoked / wrong-fixture / happy path.
+- `_tests/scoring/guard.test.ts` — verifyMatchToken: expired / revoked /
+  wrong-fixture / happy path.
 - `_tests/fixtures-public/render.test.ts` — LIVE badge and score rendering.
-- `_tests/sport-configs/validate-config.test.ts` — strict shape validation for the sport-configs body.
-- `_tests/shared/round-robin.test.ts` — pure round-robin generator (all-pairs, bye distribution, determinism).
+- `_tests/sport-configs/validate-config.test.ts` — strict shape validation for
+  the sport-configs body.
+- `_tests/shared/round-robin.test.ts` — pure round-robin generator (all-pairs,
+  bye distribution, determinism).
 
 ```bash
 deno test --allow-net supabase/functions/_tests/
@@ -234,8 +238,8 @@ deno check supabase/functions/scoring/index.ts
 ## Smoke-testing the scoring routes
 
 The seed inserts a soccer fixture (Reds vs Blues) with id
-`f0111111-1111-1111-1111-111111111111` **and** a long-lived operator
-match code hashed into `match_access`. The raw code is:
+`f0111111-1111-1111-1111-111111111111` **and** a long-lived operator match code
+hashed into `match_access`. The raw code is:
 
 ```
 DEVCODE1
@@ -245,8 +249,8 @@ This walkthrough drives that fixture from `scheduled` to `complete`.
 
 ### One-line end-to-end
 
-The full arc (mint → score → live → finalize → standings → revoke →
-confirm 401) has a scripted walkthrough:
+The full arc (mint → score → live → finalize → standings → revoke → confirm 401)
+has a scripted walkthrough:
 
 ```bash
 export ORGANISER_JWT=<your organiser JWT — see docs/sprint-1.md>
@@ -254,8 +258,8 @@ export SUPABASE_ANON_KEY=$(supabase status -o json | jq -r .API.ANON_KEY)
 ./scripts/smoke-live.sh
 ```
 
-Every step prints PASS / FAIL; the summary line at the bottom is the
-overall verdict.
+Every step prints PASS / FAIL; the summary line at the bottom is the overall
+verdict.
 
 ### Manual walkthrough — bash / zsh (macOS, Linux, WSL2)
 
@@ -387,15 +391,15 @@ deno test --allow-net supabase/functions/_tests/
 
 ### `Could not find the supabase-go binary`
 
-You've got just the shim on PATH without its Go sibling. Reinstall using
-the platform-specific instructions above — the tarball / brew / scoop
-paths all keep the two binaries paired.
+You've got just the shim on PATH without its Go sibling. Reinstall using the
+platform-specific instructions above — the tarball / brew / scoop paths all keep
+the two binaries paired.
 
 ### `permission denied for table fixtures` (SQLSTATE 42501) in Edge Function logs
 
-Postgres denied a DML query before RLS even saw it — the tables need
-`GRANT`s to `service_role` / `authenticated` / `anon`. Migration
-`0003_grants.sql` handles this. Verify it's applied:
+Postgres denied a DML query before RLS even saw it — the tables need `GRANT`s to
+`service_role` / `authenticated` / `anon`. Migration `0003_grants.sql` handles
+this. Verify it's applied:
 
 ```bash
 docker exec supabase_db_monday-night-sports psql -U postgres -c \
@@ -407,35 +411,34 @@ If it's missing, run `supabase db reset`.
 
 ### `supabase db reset` fails with `runc did not terminate successfully: ... permission denied`
 
-Kernel-level issue (usually AppArmor on Ubuntu 24.04+) where the Docker
-runtime can't signal running containers. Workaround that almost always
-succeeds:
+Kernel-level issue (usually AppArmor on Ubuntu 24.04+) where the Docker runtime
+can't signal running containers. Workaround that almost always succeeds:
 
 ```bash
 supabase stop && supabase start
 ```
 
-If it still fails, the fix is AppArmor / userns config on your host —
-not something the project can patch. Falling back to a hosted Supabase
-project (`supabase link --project-ref <ref>` → `supabase db push`) also
-works and gives you the same routes at a real URL.
+If it still fails, the fix is AppArmor / userns config on your host — not
+something the project can patch. Falling back to a hosted Supabase project
+(`supabase link --project-ref <ref>` → `supabase db push`) also works and gives
+you the same routes at a real URL.
 
 ### `Conflict. The container name "/supabase_..." is already in use`
 
-The stack is already running. Either use it (`supabase status` for the
-URLs) or restart cleanly: `supabase stop && supabase start`.
+The stack is already running. Either use it (`supabase status` for the URLs) or
+restart cleanly: `supabase stop && supabase start`.
 
 ### Port already in use (54321 / 54322 / 54323 / 54324)
 
-Something else on your machine is bound to those ports. Either free them
-or edit `supabase/config.toml` to shift the numbers.
+Something else on your machine is bound to those ports. Either free them or edit
+`supabase/config.toml` to shift the numbers.
 
 ### 401 from every scoring route
 
-The scoring guard hashes the bearer and looks it up in `match_access`.
-Either mint a real code (`POST /match-access`) or use the seeded dev
-code `DEVCODE1` — anything else 401s. There is no pass-through mode;
-every scoring write is cryptographically bound to a `match_access` row.
+The scoring guard hashes the bearer and looks it up in `match_access`. Either
+mint a real code (`POST /match-access`) or use the seeded dev code `DEVCODE1` —
+anything else 401s. There is no pass-through mode; every scoring write is
+cryptographically bound to a `match_access` row.
 
 ### 500 from a scoring route, no obvious body
 
@@ -449,36 +452,36 @@ The scoring service logs every caught exception as `scoring error: ...`.
 
 ### macOS: "Docker daemon not running" but Docker Desktop is open
 
-Docker Desktop's socket sometimes lags behind the UI. Wait 30s after
-opening it, or restart it. `docker info` should print a "Server Version"
-line once it's fully up.
+Docker Desktop's socket sometimes lags behind the UI. Wait 30s after opening it,
+or restart it. `docker info` should print a "Server Version" line once it's
+fully up.
 
 ### Windows: `docker` works in PowerShell but `supabase start` fails from WSL2
 
-Enable WSL2 integration for your distro in Docker Desktop → Settings →
-Resources → WSL Integration, then restart the WSL shell.
+Enable WSL2 integration for your distro in Docker Desktop → Settings → Resources
+→ WSL Integration, then restart the WSL shell.
 
 ### Apple Silicon (M1/M2/M3/M4)
 
-Everything runs natively via arm64 images — no Rosetta needed. If you
-see "no matching manifest for linux/arm64/v8", update Docker Desktop and
-`supabase` to the latest.
+Everything runs natively via arm64 images — no Rosetta needed. If you see "no
+matching manifest for linux/arm64/v8", update Docker Desktop and `supabase` to
+the latest.
 
 ---
 
 ## API documentation (Swagger UI)
 
-When the stack is up, an interactive Swagger UI is served by the
-`api-docs` Edge Function:
+When the stack is up, an interactive Swagger UI is served by the `api-docs` Edge
+Function:
 
 - Browse: <http://127.0.0.1:54321/functions/v1/api-docs>
 - Raw spec: <http://127.0.0.1:54321/functions/v1/api-docs/openapi.yaml>
 
 Every route on the backend (fixtures-public, seasons, teams, scoring,
-match-access, sport-configs, live, standings, results-public) is
-documented there, including request/response schemas and the two auth
-schemes (`organiserBearer`, `matchToken`). Use the "Try it out" button
-to hit routes directly from the browser.
+match-access, sport-configs, live, standings, results-public) is documented
+there, including request/response schemas and the two auth schemes
+(`organiserBearer`, `matchToken`). Use the "Try it out" button to hit routes
+directly from the browser.
 
 **Editing the spec:** the source of truth lives at
 [`docs/openapi.yaml`](openapi.yaml). After you edit it, run:
@@ -487,22 +490,20 @@ to hit routes directly from the browser.
 ./scripts/sync-openapi.sh
 ```
 
-to copy the updated yaml into the function folder so the served UI stays
-in sync. `supabase functions deploy api-docs` needs the same step before
-release.
+to copy the updated yaml into the function folder so the served UI stays in
+sync. `supabase functions deploy api-docs` needs the same step before release.
 
 ## Where to go next
 
-- [`overview.md`](overview.md) — what the whole system does, at a
-  product level.
-- [`scoring-viewing-backend-plan.md`](scoring-viewing-backend-plan.md) —
-  live spec for the scoring/viewing backend (Sprints A–E).
-- [`sprint-1.md`](sprint-1.md) — how the Sprint 1 services
-  (fixtures-public, seasons, teams) work and how to exercise them.
-- [`sprints-c-d-e.md`](sprints-c-d-e.md) — the operator access + live
-  viewing + standings + archive chunk (Sprints C/D/E).
+- [`overview.md`](overview.md) — what the whole system does, at a product level.
+- [`scoring-viewing-backend-plan.md`](scoring-viewing-backend-plan.md) — live
+  spec for the scoring/viewing backend (Sprints A–E).
+- [`sprint-1.md`](sprint-1.md) — how the Sprint 1 services (fixtures-public,
+  seasons, teams) work and how to exercise them.
+- [`sprints-c-d-e.md`](sprints-c-d-e.md) — the operator access + live viewing +
+  standings + archive chunk (Sprints C/D/E).
 - [`realtime.md`](realtime.md) — client-side protocol for the
   `fixture_live_state` realtime channel.
 - [`decisions/`](decisions/) — the ADRs behind the C/D/E design.
-- [`production-deploy-checklist.md`](production-deploy-checklist.md) —
-  what to verify before pushing to a hosted Supabase project.
+- [`production-deploy-checklist.md`](production-deploy-checklist.md) — what to
+  verify before pushing to a hosted Supabase project.

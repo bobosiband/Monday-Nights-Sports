@@ -10,10 +10,7 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { createServiceClient } from "../_shared/supabase-client.ts";
 import type { MatchEvent, SportConfig } from "../_shared/score.ts";
-import type {
-  DecidedBy,
-  FixtureStatus,
-} from "./constants.ts";
+import type { DecidedBy, FixtureStatus } from "./constants.ts";
 import type { FixtureContext, PeriodBreakdown } from "./types.ts";
 
 /**

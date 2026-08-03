@@ -12,7 +12,7 @@
 import { readJson } from "../../_shared/validate.ts";
 import { jsonResponse } from "../../_shared/cors.ts";
 import { badRequest, conflict } from "../errors.ts";
-import { DECIDED_BY, FIXTURE_STATUS, type DecidedBy } from "../constants.ts";
+import { DECIDED_BY, type DecidedBy, FIXTURE_STATUS } from "../constants.ts";
 import {
   client,
   loadEvents,

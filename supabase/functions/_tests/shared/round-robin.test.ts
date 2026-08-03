@@ -94,7 +94,10 @@ Deno.test("two teams: one round, one fixture, no byes", () => {
   const fixtures = generateRoundRobin(["A", "B"]);
   assertEquals(fixtures.length, 1);
   assertEquals(fixtures[0].round, 1);
-  assertEquals(pairKey(fixtures[0].home_team_id, fixtures[0].away_team_id!), "A|B");
+  assertEquals(
+    pairKey(fixtures[0].home_team_id, fixtures[0].away_team_id!),
+    "A|B",
+  );
 });
 
 // ---------- even counts ---------------------------------------------------

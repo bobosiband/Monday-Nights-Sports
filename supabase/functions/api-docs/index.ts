@@ -77,7 +77,10 @@ serve((request) => {
   if (pathname.endsWith("/openapi.yaml")) {
     return new Response(OPENAPI_YAML, {
       status: 200,
-      headers: { ...corsHeaders, "content-type": "application/yaml; charset=utf-8" },
+      headers: {
+        ...corsHeaders,
+        "content-type": "application/yaml; charset=utf-8",
+      },
     });
   }
 

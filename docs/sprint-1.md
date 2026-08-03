@@ -17,13 +17,13 @@ published event as HTML, plain text, or JSON.
 
 ## What shipped
 
-| Task | Commit                                                          | Delivers                                                                  |
-|------|-----------------------------------------------------------------|---------------------------------------------------------------------------|
+| Task | Commit                                                          | Delivers                                                                                                    |
+| ---- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
 | S1.1 | `chore: scaffold repo structure, tooling, and shared utilities` | Folder layout, `.gitignore`, `config.toml`, `_shared/` helpers, initial schema + fixtures function in place |
-| S1.2 | `feat(db): add core schema and seed data`                       | Verified migration + `supabase/seed.sql` with a demo season               |
-| S1.3 | `feat(auth): add organiser authentication guard`                | Real `_shared/auth.ts` — verifies Supabase Auth JWT                       |
-| S1.4 | `feat(seasons): add season management service`                  | `functions/seasons` (create / list / update / archive / set-active)       |
-| S1.5 | `feat(teams): add team management service`                      | `functions/teams` (add / rename / remove / bulk-add)                      |
+| S1.2 | `feat(db): add core schema and seed data`                       | Verified migration + `supabase/seed.sql` with a demo season                                                 |
+| S1.3 | `feat(auth): add organiser authentication guard`                | Real `_shared/auth.ts` — verifies Supabase Auth JWT                                                         |
+| S1.4 | `feat(seasons): add season management service`                  | `functions/seasons` (create / list / update / archive / set-active)                                         |
+| S1.5 | `feat(teams): add team management service`                      | `functions/teams` (add / rename / remove / bulk-add)                                                        |
 
 ## Running everything
 
@@ -34,23 +34,22 @@ supabase functions serve
 ```
 
 `supabase status` prints the API URL, anon key, and service-role key you need
-for the curl examples below. Substitute them into `$URL`, `$ANON`, and
-`$TOKEN` (organiser JWT) as needed.
+for the curl examples below. Substitute them into `$URL`, `$ANON`, and `$TOKEN`
+(organiser JWT) as needed.
 
 ## Obtaining an organiser JWT
 
-The write services (`seasons`, `teams`) require a valid Supabase Auth JWT in
-the `Authorization: Bearer <token>` header. `requireOrganiser` in
-`_shared/auth.ts` validates the token against Supabase Auth and returns the
-user record on success or a `Response` (401) that the service returns
-unchanged.
+The write services (`seasons`, `teams`) require a valid Supabase Auth JWT in the
+`Authorization: Bearer <token>` header. `requireOrganiser` in `_shared/auth.ts`
+validates the token against Supabase Auth and returns the user record on success
+or a `Response` (401) that the service returns unchanged.
 
 For local development:
 
 1. Create an organiser user. The simplest path is the Studio auth pane
-   (`http://127.0.0.1:54323/project/default/auth/users` → *Add user*). To do
-   it purely from the CLI, hit the local auth signup endpoint with the anon
-   key from `supabase status`:
+   (`http://127.0.0.1:54323/project/default/auth/users` → _Add user_). To do it
+   purely from the CLI, hit the local auth signup endpoint with the anon key
+   from `supabase status`:
    ```bash
    curl -X POST "$URL/auth/v1/signup" \
      -H "apikey: $ANON" \
@@ -74,8 +73,8 @@ frontend forwards the resulting session token.
 
 ### `fixtures-public` — public draw delivery
 
-No auth required. RLS enforces "published events only" on the underlying
-tables, so unpublished events return 404 automatically.
+No auth required. RLS enforces "published events only" on the underlying tables,
+so unpublished events return 404 automatically.
 
 ```bash
 # HTML (default) — the URL you paste into the group chat
@@ -90,13 +89,13 @@ curl "$URL/functions/v1/fixtures-public?event=<event-id>&format=json"
 
 ### `seasons` — organiser season management
 
-All routes require `Authorization: Bearer $TOKEN`. Documented in more detail
-in Task 4's section below.
+All routes require `Authorization: Bearer $TOKEN`. Documented in more detail in
+Task 4's section below.
 
 ### `teams` — organiser team management
 
-All routes require `Authorization: Bearer $TOKEN`. Documented in more detail
-in Task 5's section below.
+All routes require `Authorization: Bearer $TOKEN`. Documented in more detail in
+Task 5's section below.
 
 ## Task detail
 
@@ -127,26 +126,26 @@ in Task 5's section below.
 
 Routes (all authenticated):
 
-| Method | Path                            | Purpose                           |
-|--------|---------------------------------|-----------------------------------|
-| POST   | `/seasons`                      | Create a season                   |
-| GET    | `/seasons`                      | List seasons (organiser view)     |
-| GET    | `/seasons/:id`                  | Get one season                    |
-| PATCH  | `/seasons/:id`                  | Update fields                     |
-| POST   | `/seasons/:id/archive`          | Archive (soft delete)             |
-| POST   | `/seasons/:id/activate`         | Mark as the active season         |
+| Method | Path                    | Purpose                       |
+| ------ | ----------------------- | ----------------------------- |
+| POST   | `/seasons`              | Create a season               |
+| GET    | `/seasons`              | List seasons (organiser view) |
+| GET    | `/seasons/:id`          | Get one season                |
+| PATCH  | `/seasons/:id`          | Update fields                 |
+| POST   | `/seasons/:id/archive`  | Archive (soft delete)         |
+| POST   | `/seasons/:id/activate` | Mark as the active season     |
 
 ### Task 5 — Teams
 
 Routes (all authenticated):
 
-| Method | Path                              | Purpose                             |
-|--------|-----------------------------------|-------------------------------------|
-| POST   | `/teams`                          | Create a team in a season           |
-| GET    | `/teams?season=<id>`              | List teams for a season             |
-| PATCH  | `/teams/:id`                      | Rename a team                       |
-| DELETE | `/teams/:id`                      | Remove a team                       |
-| POST   | `/teams/bulk`                     | Bulk-add teams from a pasted list   |
+| Method | Path                 | Purpose                           |
+| ------ | -------------------- | --------------------------------- |
+| POST   | `/teams`             | Create a team in a season         |
+| GET    | `/teams?season=<id>` | List teams for a season           |
+| PATCH  | `/teams/:id`         | Rename a team                     |
+| DELETE | `/teams/:id`         | Remove a team                     |
+| POST   | `/teams/bulk`        | Bulk-add teams from a pasted list |
 
 ## Out of scope (Sprint 2 or later)
 
