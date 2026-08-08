@@ -87,15 +87,14 @@ everything here is a self-contained API.
 
 ## Where the build is today
 
-The full arc is now reachable end-to-end through documented HTTP endpoints.
-An organiser signs in, creates a season, adds teams, builds a Monday-night
-draw (`events` service), publishes it; students see fixtures and live
-scores; operators score matches with short-lived codes; standings and the
-archive populate automatically.
+The full arc is now reachable end-to-end through documented HTTP endpoints. An
+organiser signs in, creates a season, adds teams, builds a Monday-night draw
+(`events` service), publishes it; students see fixtures and live scores;
+operators score matches with short-lived codes; standings and the archive
+populate automatically.
 
-The GitHub milestones view is the source of truth for what has shipped and
-what is next:
-<https://github.com/bobosiband/Monday-Nights-Sports/milestones>. The
+The GitHub milestones view is the source of truth for what has shipped and what
+is next: <https://github.com/bobosiband/Monday-Nights-Sports/milestones>. The
 per-sprint markdown logs ([`sprint-1.md`](sprint-1.md),
 [`sprints-c-d-e.md`](sprints-c-d-e.md)) are kept for design context, and
 [`decisions/`](decisions/) records the durable ADRs.
@@ -104,8 +103,8 @@ per-sprint markdown logs ([`sprint-1.md`](sprint-1.md),
 
 - Building a frontend against this API →
   [`docs/frontend-api-guide.md`](frontend-api-guide.md) (narrative) and
-  [`docs/openapi.yaml`](openapi.yaml) (formal spec, also served as
-  Swagger UI at `/api-docs`).
+  [`docs/openapi.yaml`](openapi.yaml) (formal spec, also served as Swagger UI at
+  `/api-docs`).
 - Running it locally / Sprint 1 detail → [`README.md`](../README.md),
   [`docs/sprint-1.md`](sprint-1.md)
 - Deploying to a hosted Supabase project →

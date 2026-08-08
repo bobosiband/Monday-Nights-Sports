@@ -123,18 +123,17 @@ the verification checklist that goes with it.
 
 ## Sprint status
 
-The source of truth for what's shipped and what's next is the GitHub
-milestones view:
-<https://github.com/bobosiband/Monday-Nights-Sports/milestones>.
+The source of truth for what's shipped and what's next is the GitHub milestones
+view: <https://github.com/bobosiband/Monday-Nights-Sports/milestones>.
 
-The per-sprint markdown logs are kept for the design context they carry,
-not for status:
+The per-sprint markdown logs are kept for the design context they carry, not for
+status:
 
 - Sprint 1 (foundation): [`docs/sprint-1.md`](docs/sprint-1.md).
 - Sprints C, D & E (operator access, live viewing, standings & archive):
   [`docs/sprints-c-d-e.md`](docs/sprints-c-d-e.md).
-- Sprint F (draw builder + production readiness): the `events` service,
-  ADR 0006, `docs/frontend-api-guide.md`.
+- Sprint F (draw builder + production readiness): the `events` service, ADR
+  0006, `docs/frontend-api-guide.md`.
 
 ## Licence
 

@@ -151,9 +151,9 @@ Existing Sprint 1/B tests still pass.
 
 ## What did NOT ship (and where it's tracked)
 
-- **Draw builder** (organiser CRUD for `events` / `slots` / `fixtures` +
-  a `publish` action). **Shipped in Sprint F** as the `events` service;
-  design recorded in [ADR 0006](decisions/0006-draw-generation.md).
+- **Draw builder** (organiser CRUD for `events` / `slots` / `fixtures` + a
+  `publish` action). **Shipped in Sprint F** as the `events` service; design
+  recorded in [ADR 0006](decisions/0006-draw-generation.md).
 - **Scorer attribution surfacing.** `match_events.player_id` is captured but no
   read path exposes it — see
   [ADR 0005](decisions/0005-deferred-attribution-and-shootouts.md).
