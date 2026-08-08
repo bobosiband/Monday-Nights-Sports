@@ -18,6 +18,8 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase-client.ts";
 import { isAuthFailure, requireOrganiser } from "../_shared/auth.ts";
+import { subPath } from "../_shared/http.ts";
+import { isUuid, nonEmptyString, readJson } from "../_shared/validate.ts";
 
 interface CreateSeasonBody {
   name?: unknown;
@@ -40,50 +42,6 @@ interface ValidatedCreate {
   starts_on: string;
   ends_on: string;
   is_active: boolean;
-}
-
-/**
- * Split the URL pathname into the sub-path relative to this function. The
- * function is mounted at `/functions/v1/seasons`, but the raw request may
- * report the path in different shapes depending on the runtime — so we
- * anchor on the `seasons` segment rather than trusting a specific prefix.
- *
- * @param request - The incoming request.
- * @returns The path segments after `seasons` (empty for the collection).
- */
-function subPath(request: Request): string[] {
-  const parts = new URL(request.url).pathname.split("/").filter(Boolean);
-  const idx = parts.lastIndexOf("seasons");
-  return idx >= 0 ? parts.slice(idx + 1) : parts;
-}
-
-/**
- * Parse a JSON body defensively. Returns `null` for missing / malformed
- * bodies so callers can 400 without leaking parse errors.
- *
- * @param request - The incoming request.
- * @returns The parsed body or `null`.
- */
-async function readJson<T>(request: Request): Promise<T | null> {
-  try {
-    if (!request.body) return null;
-    return (await request.json()) as T;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Check a value is a non-empty trimmed string.
- *
- * @param value - Any value.
- * @returns The trimmed string if valid, otherwise `null`.
- */
-function nonEmptyString(value: unknown, max = 200): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  if (!trimmed || trimmed.length > max) return null;
-  return trimmed;
 }
 
 /**
@@ -199,18 +157,6 @@ function validateUpdate(
 }
 
 /**
- * UUID (v4-ish) validator. We only need to weed out obviously malformed
- * input before hitting Postgres; the DB will still reject invalid ids.
- *
- * @param value - Any value.
- * @returns `true` if the string looks like a UUID.
- */
-function isUuid(value: string): boolean {
-  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
-    .test(value);
-}
-
-/**
  * Set exactly one season as active. Two updates: unset any currently active
  * season, then set the target. Not atomic — a race between concurrent
  * organiser calls could briefly leave zero active seasons, but the partial
@@ -279,7 +225,7 @@ serve(async (request) => {
   if (isAuthFailure(auth)) return auth;
 
   const supabase = createServiceClient();
-  const segments = subPath(request);
+  const segments = subPath(request, "seasons");
 
   try {
     // Collection routes: /seasons

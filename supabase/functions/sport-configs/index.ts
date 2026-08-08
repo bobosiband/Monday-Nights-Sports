@@ -20,6 +20,7 @@ import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase-client.ts";
 import { isAuthFailure, requireOrganiser } from "../_shared/auth.ts";
 import { isUuid, nonEmptyString, readJson } from "../_shared/validate.ts";
+import { subPath } from "../_shared/http.ts";
 import { validateConfig } from "./validate-config.ts";
 
 /** Body of a POST /sport-configs (upsert on season+sport). */
@@ -35,18 +36,6 @@ interface PatchBody {
   config?: unknown;
 }
 
-/**
- * Split the URL path relative to this function's mount point.
- *
- * @param request - The incoming request.
- * @returns Path segments after `sport-configs`.
- */
-function subPath(request: Request): string[] {
-  const parts = new URL(request.url).pathname.split("/").filter(Boolean);
-  const idx = parts.lastIndexOf("sport-configs");
-  return idx >= 0 ? parts.slice(idx + 1) : parts;
-}
-
 serve(async (request) => {
   const preflight = handlePreflight(request);
   if (preflight) return preflight;
@@ -55,7 +44,7 @@ serve(async (request) => {
   if (isAuthFailure(auth)) return auth;
 
   const supabase = createServiceClient();
-  const segments = subPath(request);
+  const segments = subPath(request, "sport-configs");
 
   try {
     // Collection: /sport-configs

@@ -20,6 +20,7 @@ import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { isAuthFailure, requireOrganiser } from "../_shared/auth.ts";
 import { createServiceClient } from "../_shared/supabase-client.ts";
 import { isUuid, nonEmptyString, readJson } from "../_shared/validate.ts";
+import { subPath } from "../_shared/http.ts";
 import { generateMatchCode, hashMatchCode } from "../_shared/match-token.ts";
 import {
   findAccess,
@@ -44,18 +45,6 @@ interface MintBody {
   fixture_id?: unknown;
   ttl_minutes?: unknown;
   label?: unknown;
-}
-
-/**
- * Split the URL path relative to this function's mount point.
- *
- * @param request - The incoming request.
- * @returns Path segments after `match-access`.
- */
-function subPath(request: Request): string[] {
-  const parts = new URL(request.url).pathname.split("/").filter(Boolean);
-  const idx = parts.lastIndexOf("match-access");
-  return idx >= 0 ? parts.slice(idx + 1) : parts;
 }
 
 /**
@@ -215,7 +204,7 @@ serve(async (request) => {
   const auth = await requireOrganiser(request);
   if (isAuthFailure(auth)) return auth;
 
-  const segments = subPath(request);
+  const segments = subPath(request, "match-access");
 
   try {
     // Collection: /match-access
