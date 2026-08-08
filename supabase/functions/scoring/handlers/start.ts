@@ -7,7 +7,7 @@
 // fixture (organisers reopen those explicitly via finalize).
 // -----------------------------------------------------------------------------
 
-import { conflict } from "../errors.ts";
+import { conflict } from "../../_shared/errors.ts";
 import { FIXTURE_STATUS, type FixtureStatus } from "../constants.ts";
 import { client, updateFixtureStatus } from "../db.ts";
 import { respondDerived } from "../derive.ts";

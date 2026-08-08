@@ -11,7 +11,7 @@ import {
   positiveInt,
   readJson,
 } from "../../_shared/validate.ts";
-import { badRequest, conflict } from "../errors.ts";
+import { badRequest, conflict } from "../../_shared/errors.ts";
 import { FIXTURE_STATUS } from "../constants.ts";
 import { client, insertEvent, loadEvents } from "../db.ts";
 import { respondDerived } from "../derive.ts";

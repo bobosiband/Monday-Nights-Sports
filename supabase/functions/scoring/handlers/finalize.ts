@@ -11,7 +11,7 @@
 
 import { readJson } from "../../_shared/validate.ts";
 import { jsonResponse } from "../../_shared/cors.ts";
-import { badRequest, conflict } from "../errors.ts";
+import { badRequest, conflict } from "../../_shared/errors.ts";
 import { DECIDED_BY, type DecidedBy, FIXTURE_STATUS } from "../constants.ts";
 import {
   client,
