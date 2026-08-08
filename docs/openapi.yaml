@@ -1,19 +1,20 @@
 openapi: 3.1.0
 info:
   title: Monday Night Sports — Backend API
-  version: 0.4.0
+  version: 0.5.0
   description: |
     Supabase Edge Functions backing Monday Night Sports.
 
     - Public reads: `fixtures-public`, `live`, `results-public`, `standings`.
-    - Organiser writes (Supabase Auth JWT): `seasons`, `teams`,
+    - Organiser writes (Supabase Auth JWT): `seasons`, `teams`, `events`,
       `match-access`, `sport-configs`.
     - Scoped scoring writes (operator match code): `scoring/:fixtureId/*`.
 
     Base path for every function is `/functions/v1/<function-name>`.
 
     Realtime subscription details for live scores live in
-    `docs/realtime.md`.
+    `docs/realtime.md`. The draw-generation model behind the `events`
+    service is recorded in `docs/decisions/0006-draw-generation.md`.
   contact:
     name: Monday Night Sports (COSA)
   license:
@@ -38,6 +39,8 @@ tags:
     description: Organiser team management
   - name: sport-configs
     description: Organiser sport-config CRUD
+  - name: events
+    description: Organiser draw builder — events, slots, fixtures, publish
   - name: scoring
     description: Live scoring writes (match-code gated)
   - name: match-access
@@ -782,6 +785,362 @@ paths:
         '404': { $ref: '#/components/responses/NotFound' }
 
   # ----------------------------------------------------------------
+  # events — organiser draw builder
+  # ----------------------------------------------------------------
+  /events:
+    get:
+      tags: [events]
+      summary: List events for a season (organiser view)
+      parameters:
+        - name: season
+          in: query
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items: { $ref: '#/components/schemas/Event' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    post:
+      tags: [events]
+      summary: Create an event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateEventBody' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event: { $ref: '#/components/schemas/Event' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /events/{id}:
+    parameters:
+      - $ref: '#/components/parameters/UuidPath'
+    get:
+      tags: [events]
+      summary: One event hydrated with its slots and fixtures
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/EventDetail' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [events]
+      summary: Update `event_date` (season is not movable)
+      description: |
+        Refuses (409) when the event is published — unpublish it first.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateEventBody' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event: { $ref: '#/components/schemas/Event' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [events]
+      summary: Delete an unpublished event (cascades to slots + fixtures)
+      description: |
+        Refuses (409) on a published event — unpublish first so the
+        archive doesn't develop holes.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { type: string, format: uuid }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /events/{id}/slots:
+    parameters:
+      - $ref: '#/components/parameters/UuidPath'
+    post:
+      tags: [events]
+      summary: Create a slot on this event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateSlotBody' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slot: { $ref: '#/components/schemas/Slot' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /events/{id}/slots/{slotId}:
+    parameters:
+      - $ref: '#/components/parameters/UuidPath'
+      - name: slotId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [events]
+      summary: Update a slot (sparse)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateSlotBody' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  slot: { $ref: '#/components/schemas/Slot' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [events]
+      summary: Delete a slot with no fixtures
+      description: |
+        Refuses (409) when any fixture still points at the slot.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { type: string, format: uuid }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /events/{id}/fixtures:
+    parameters:
+      - $ref: '#/components/parameters/UuidPath'
+    post:
+      tags: [events]
+      summary: Create a single fixture
+      description: |
+        Cross-checks against the season (all 409 if they fail):
+        slot must belong to this event; sport must be in
+        `seasons.sports`; both teams (home always; away when not null)
+        must belong to the season. `away_team_id: null` (or omitted) is
+        legal — it models a bye.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CreateFixtureBody' }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fixture: { $ref: '#/components/schemas/OrganiserFixture' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /events/{id}/fixtures/{fixtureId}:
+    parameters:
+      - $ref: '#/components/parameters/UuidPath'
+      - name: fixtureId
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    patch:
+      tags: [events]
+      summary: Move / reassign / cancel a fixture (sparse)
+      description: |
+        `status` may only be set to `scheduled` or `cancelled` here.
+        `live` and `complete` are transitions owned by the scoring
+        service and cannot be flipped by an organiser.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/UpdateFixtureBody' }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  fixture: { $ref: '#/components/schemas/OrganiserFixture' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+    delete:
+      tags: [events]
+      summary: Delete a fixture with no `match_events`
+      description: |
+        Refuses (409) when the fixture has any recorded match events —
+        cancel it instead to preserve the audit trail.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  deleted: { type: string, format: uuid }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /events/{id}/generate:
+    parameters:
+      - $ref: '#/components/parameters/UuidPath'
+      - name: dry_run
+        in: query
+        required: false
+        description: |
+          When `true`, returns the proposed fixtures without writing.
+          Same code path as the insert — the preview matches exactly
+          what would land.
+        schema: { type: boolean, default: false }
+    post:
+      tags: [events]
+      summary: Build a round-robin draw
+      description: |
+        Generates a single round-robin over `team_ids` and spreads the
+        rounds across `slot_ids` (round R lands in slot at index
+        `(R-1) mod slot_ids.length`; wraps when there are more rounds
+        than slots). See ADR 0006.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/GenerateBody' }
+      responses:
+        '200':
+          description: Preview (returned when `dry_run=true`)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  dry_run: { type: boolean }
+                  preview:
+                    type: array
+                    items: { $ref: '#/components/schemas/DrawPreviewFixture' }
+        '201':
+          description: Fixtures inserted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  inserted:
+                    type: array
+                    items: { $ref: '#/components/schemas/OrganiserFixture' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /events/{id}/publish:
+    parameters:
+      - $ref: '#/components/parameters/UuidPath'
+    post:
+      tags: [events]
+      summary: Flip `is_published=true` (with structural pre-flight)
+      description: |
+        Refuses (409, with a specific reason string) when the draw is
+        structurally broken: no fixtures, a fixture missing its slot,
+        a team not in this season, or a sport not in
+        `seasons.sports`. See ADR 0006 for the reasoning.
+
+        Publishing an already-published event is a no-op success.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event: { $ref: '#/components/schemas/Event' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  /events/{id}/unpublish:
+    parameters:
+      - $ref: '#/components/parameters/UuidPath'
+    post:
+      tags: [events]
+      summary: Flip `is_published=false` (with safety check)
+      description: |
+        Refuses (409) when any fixture is `live` or `complete`, unless
+        the body sets `{ "force": true }` — silently hiding an
+        in-flight match from viewers is a support call waiting to
+        happen.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force:
+                  type: boolean
+                  default: false
+                  description: Set true to unpublish over live/complete fixtures.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event: { $ref: '#/components/schemas/Event' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # ----------------------------------------------------------------
   # api-docs
   # ----------------------------------------------------------------
   /api-docs:
@@ -928,14 +1287,161 @@ components:
 
     Event:
       type: object
+      description: |
+        Event row as returned by the organiser `events` service. The
+        `seasons` sub-object is only present when the row was loaded by
+        `fixtures-public` (which joins the season name for the header).
       properties:
         id: { type: string, format: uuid }
+        season_id: { type: string, format: uuid }
         event_date: { type: string, format: date }
         is_published: { type: boolean }
+        published_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
         seasons:
           type: object
+          nullable: true
           properties:
             name: { type: string }
+
+    CreateEventBody:
+      type: object
+      required: [season_id, event_date]
+      properties:
+        season_id: { type: string, format: uuid }
+        event_date: { type: string, format: date }
+
+    UpdateEventBody:
+      type: object
+      required: [event_date]
+      properties:
+        event_date: { type: string, format: date }
+
+    Slot:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        event_id: { type: string, format: uuid }
+        slot_number: { type: integer, minimum: 1 }
+        starts_at:
+          type: string
+          description: HH:MM:SS wall clock; the `slots.starts_at` column is naive time.
+        pitch: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+
+    CreateSlotBody:
+      type: object
+      required: [slot_number, starts_at]
+      properties:
+        slot_number: { type: integer, minimum: 1 }
+        starts_at:
+          type: string
+          description: HH:MM or HH:MM:SS
+        pitch:
+          type: string
+          nullable: true
+
+    UpdateSlotBody:
+      type: object
+      description: Sparse — at least one field must be present.
+      properties:
+        slot_number: { type: integer, minimum: 1 }
+        starts_at: { type: string }
+        pitch: { type: string, nullable: true }
+
+    OrganiserFixture:
+      type: object
+      description: |
+        Fixture row as returned by the organiser `events` service.
+        Distinct from `PublicFixture`, which is the read shape served
+        by `fixtures-public` with team names joined in.
+      properties:
+        id: { type: string, format: uuid }
+        event_id: { type: string, format: uuid }
+        slot_id: { type: string, format: uuid }
+        home_team_id: { type: string, format: uuid }
+        away_team_id: { type: string, format: uuid, nullable: true }
+        sport: { type: string }
+        status:
+          type: string
+          enum: [scheduled, live, complete, cancelled]
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+
+    CreateFixtureBody:
+      type: object
+      required: [slot_id, sport, home_team_id]
+      properties:
+        slot_id: { type: string, format: uuid }
+        sport: { type: string }
+        home_team_id: { type: string, format: uuid }
+        away_team_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Omit or null for a bye.
+
+    UpdateFixtureBody:
+      type: object
+      description: |
+        Sparse — at least one field must be present. `status` is limited
+        to `scheduled` and `cancelled`; `live`/`complete` are owned by
+        the scoring service.
+      properties:
+        slot_id: { type: string, format: uuid }
+        sport: { type: string }
+        home_team_id: { type: string, format: uuid }
+        away_team_id: { type: string, format: uuid, nullable: true }
+        status:
+          type: string
+          enum: [scheduled, cancelled]
+
+    EventDetail:
+      type: object
+      properties:
+        event: { $ref: '#/components/schemas/Event' }
+        slots:
+          type: array
+          items: { $ref: '#/components/schemas/Slot' }
+        fixtures:
+          type: array
+          items: { $ref: '#/components/schemas/OrganiserFixture' }
+
+    GenerateBody:
+      type: object
+      required: [sport, team_ids, slot_ids]
+      properties:
+        sport:
+          type: string
+          description: Must be in `seasons.sports` of the event's season.
+        team_ids:
+          type: array
+          minItems: 2
+          uniqueItems: true
+          items: { type: string, format: uuid }
+        slot_ids:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items: { type: string, format: uuid }
+
+    DrawPreviewFixture:
+      type: object
+      description: |
+        A proposed fixture returned by `POST /events/:id/generate?dry_run=true`.
+        Same shape as the eventual `OrganiserFixture` insert but keyed by
+        `round` (from the round-robin generator) rather than a fixture id.
+      required: [round, slot_id, sport, home_team_id]
+      properties:
+        round: { type: integer, minimum: 1 }
+        slot_id: { type: string, format: uuid }
+        sport: { type: string }
+        home_team_id: { type: string, format: uuid }
+        away_team_id: { type: string, format: uuid, nullable: true }
 
     PublicFixture:
       type: object

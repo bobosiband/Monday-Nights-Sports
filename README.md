@@ -26,13 +26,14 @@ API/service they can consume.
 monday-night-sports/
 ├── docs/
 │   ├── overview.md                     # start here — what this system does
+│   ├── frontend-api-guide.md           # narrative guide for frontend consumers
 │   ├── scoring-viewing-backend-plan.md # live design doc for the scoring stack
 │   ├── local-setup.md                  # everything you need to run it locally
 │   ├── realtime.md                     # Supabase Realtime client protocol
 │   ├── openapi.yaml                    # source-of-truth API spec (Swagger UI)
 │   ├── sprint-1.md                     # Sprint 1 running log
 │   ├── sprints-c-d-e.md                # Sprints C/D/E running log
-│   └── decisions/                      # ADRs (0001-0005)
+│   └── decisions/                      # ADRs (0001-0006)
 ├── scripts/
 │   ├── deploy.sh                       # one-command hosted deploy
 │   ├── seed-remote.sh                  # psql wrapper for hosted seeding
@@ -53,12 +54,16 @@ monday-night-sports/
         ├── _shared/                    # not deployed as a function
         │   ├── auth.ts                 # organiser JWT guard
         │   ├── cors.ts                 # CORS helpers
+        │   ├── errors.ts               # typed 4xx/5xx response helpers
+        │   ├── http.ts                 # subPath router helper
         │   ├── match-token.ts          # opaque operator-code primitive
+        │   ├── round-robin.ts          # pure draw-generator (used by events/)
         │   ├── score.ts                # pure score-derivation fold
         │   ├── standings.ts            # pure standings computation
         │   ├── supabase-client.ts      # service-role client factory
         │   └── validate.ts             # shared input validators
         ├── api-docs/                   # Swagger UI + embedded OpenAPI
+        ├── events/                     # organiser: draw builder (events/slots/fixtures/generate/publish)
         ├── fixtures-public/            # public draw (HTML / text / JSON, LIVE badge)
         ├── live/                       # public live-score endpoint
         ├── match-access/               # organiser: mint / revoke operator codes
@@ -118,9 +123,17 @@ the verification checklist that goes with it.
 
 ## Sprint status
 
+The source of truth for what's shipped and what's next is the GitHub milestones
+view: <https://github.com/bobosiband/Monday-Nights-Sports/milestones>.
+
+The per-sprint markdown logs are kept for the design context they carry, not for
+status:
+
 - Sprint 1 (foundation): [`docs/sprint-1.md`](docs/sprint-1.md).
 - Sprints C, D & E (operator access, live viewing, standings & archive):
   [`docs/sprints-c-d-e.md`](docs/sprints-c-d-e.md).
+- Sprint F (draw builder + production readiness): the `events` service, ADR
+  0006, `docs/frontend-api-guide.md`.
 
 ## Licence
 

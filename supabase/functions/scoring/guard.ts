@@ -25,7 +25,7 @@
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import { createServiceClient } from "../_shared/supabase-client.ts";
 import { extractBearer, hashMatchCode } from "../_shared/match-token.ts";
-import { forbidden, unauthorized } from "./errors.ts";
+import { forbidden, unauthorized } from "../_shared/errors.ts";
 
 /**
  * The row returned by verification on the happy path. Exposes only the

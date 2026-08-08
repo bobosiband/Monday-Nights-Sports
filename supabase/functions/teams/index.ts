@@ -18,6 +18,8 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase-client.ts";
 import { isAuthFailure, requireOrganiser } from "../_shared/auth.ts";
+import { subPath } from "../_shared/http.ts";
+import { isUuid, nonEmptyString, readJson } from "../_shared/validate.ts";
 
 interface CreateTeamBody {
   season_id?: unknown;
@@ -31,60 +33,6 @@ interface RenameTeamBody {
 interface BulkAddBody {
   season_id?: unknown;
   names?: unknown;
-}
-
-/**
- * Split the URL pathname into the sub-path relative to this function.
- * Anchors on the `teams` segment so mount-point differences don't matter.
- *
- * @param request - The incoming request.
- * @returns The path segments after `teams` (empty for the collection).
- */
-function subPath(request: Request): string[] {
-  const parts = new URL(request.url).pathname.split("/").filter(Boolean);
-  const idx = parts.lastIndexOf("teams");
-  return idx >= 0 ? parts.slice(idx + 1) : parts;
-}
-
-/**
- * Parse a JSON body defensively.
- *
- * @param request - The incoming request.
- * @returns The parsed body or `null`.
- */
-async function readJson<T>(request: Request): Promise<T | null> {
-  try {
-    if (!request.body) return null;
-    return (await request.json()) as T;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Non-empty trimmed string validator.
- *
- * @param value - Any value.
- * @param max - Maximum length after trim.
- * @returns Trimmed string, or `null`.
- */
-function nonEmptyString(value: unknown, max = 120): string | null {
-  if (typeof value !== "string") return null;
-  const trimmed = value.trim();
-  if (!trimmed || trimmed.length > max) return null;
-  return trimmed;
-}
-
-/**
- * UUID (v4-ish) validator.
- *
- * @param value - Any value.
- * @returns `true` if the string looks like a UUID.
- */
-function isUuid(value: unknown): value is string {
-  return typeof value === "string" &&
-    /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/
-      .test(value);
 }
 
 /**
@@ -122,7 +70,7 @@ serve(async (request) => {
   if (isAuthFailure(auth)) return auth;
 
   const supabase = createServiceClient();
-  const segments = subPath(request);
+  const segments = subPath(request, "teams");
 
   try {
     // Collection routes: /teams

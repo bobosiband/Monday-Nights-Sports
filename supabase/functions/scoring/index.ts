@@ -21,7 +21,7 @@ import {
   methodNotAllowed,
   notFound,
   serverError,
-} from "./errors.ts";
+} from "../_shared/errors.ts";
 import { client, loadFixtureContext } from "./db.ts";
 import { handleStart } from "./handlers/start.ts";
 import { handleRecordEvent } from "./handlers/events.ts";

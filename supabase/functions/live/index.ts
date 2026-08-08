@@ -19,6 +19,7 @@ import { serve } from "https://deno.land/std@0.224.0/http/server.ts";
 import { handlePreflight, jsonResponse } from "../_shared/cors.ts";
 import { createServiceClient } from "../_shared/supabase-client.ts";
 import { isUuid } from "../_shared/validate.ts";
+import { subPath } from "../_shared/http.ts";
 
 /**
  * Shape of the JSON body returned for one fixture. Deliberately flat so a
@@ -61,18 +62,6 @@ interface LiveStateRow {
   current_period: number | null;
   status: string;
   last_event_at: string | null;
-}
-
-/**
- * Split the URL path relative to this function's mount point.
- *
- * @param request - The incoming request.
- * @returns Path segments after `live`.
- */
-function subPath(request: Request): string[] {
-  const parts = new URL(request.url).pathname.split("/").filter(Boolean);
-  const idx = parts.lastIndexOf("live");
-  return idx >= 0 ? parts.slice(idx + 1) : parts;
 }
 
 /**
@@ -290,7 +279,7 @@ serve(async (request) => {
     return jsonResponse({ error: "Method not allowed" }, 405);
   }
 
-  const segments = subPath(request);
+  const segments = subPath(request, "live");
   try {
     if (segments.length === 1) {
       return await handleFixture(segments[0]);

@@ -1,12 +1,16 @@
 // -----------------------------------------------------------------------------
-// scoring/errors.ts
+// _shared/errors.ts
 //
 // Typed error-response helpers. Each returns a `Response` the caller can
 // return directly, so handlers stay readable and every failure mode carries
 // the correct HTTP status.
+//
+// Every write service (scoring, events, and future arrivals) needs the same
+// 4xx/5xx shapes; keeping them in _shared is cheaper than growing a copy per
+// service and gives us a single place to change the JSON envelope.
 // -----------------------------------------------------------------------------
 
-import { jsonResponse } from "../_shared/cors.ts";
+import { jsonResponse } from "./cors.ts";
 
 /**
  * 400 Bad Request — the client sent something we couldn't parse or validate.
