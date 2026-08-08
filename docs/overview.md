@@ -87,24 +87,25 @@ everything here is a self-contained API.
 
 ## Where the build is today
 
-- **Shipped (Sprint 1):** core database (seasons, teams, events, slots,
-  fixtures, results) with public-read-on-published security; organiser sign-in;
-  season and team management services; the public fixtures service.
-- **Shipped (Sprints C/D/E):** operator match-code mint/revoke; real match-code
-  verification in scoring; `fixture_live_state` realtime projection; public
-  `live` endpoint; LIVE badge in `fixtures-public`; `standings` and
-  `results-public` archive; organiser `sport-configs` CRUD. See
-  [`sprints-c-d-e.md`](sprints-c-d-e.md) for the running log and
-  [`decisions/`](decisions/) for the ADRs.
-- **Building next:** the organiser **draw builder** — an `events` service that
-  actually lets an organiser create an event, its slots, its fixtures, and
-  publish the draw. Called out at the bottom of
-  [`scoring-viewing-backend-plan.md`](scoring-viewing-backend-plan.md).
+The full arc is now reachable end-to-end through documented HTTP endpoints.
+An organiser signs in, creates a season, adds teams, builds a Monday-night
+draw (`events` service), publishes it; students see fixtures and live
+scores; operators score matches with short-lived codes; standings and the
+archive populate automatically.
+
+The GitHub milestones view is the source of truth for what has shipped and
+what is next:
+<https://github.com/bobosiband/Monday-Nights-Sports/milestones>. The
+per-sprint markdown logs ([`sprint-1.md`](sprint-1.md),
+[`sprints-c-d-e.md`](sprints-c-d-e.md)) are kept for design context, and
+[`decisions/`](decisions/) records the durable ADRs.
 
 ## Where to go next
 
-- Building the scoring/viewing backend →
-  [`docs/scoring-viewing-backend-plan.md`](scoring-viewing-backend-plan.md)
+- Building a frontend against this API →
+  [`docs/frontend-api-guide.md`](frontend-api-guide.md) (narrative) and
+  [`docs/openapi.yaml`](openapi.yaml) (formal spec, also served as
+  Swagger UI at `/api-docs`).
 - Running it locally / Sprint 1 detail → [`README.md`](../README.md),
   [`docs/sprint-1.md`](sprint-1.md)
 - Deploying to a hosted Supabase project →
