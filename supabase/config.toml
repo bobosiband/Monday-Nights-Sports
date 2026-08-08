@@ -89,5 +89,10 @@ verify_jwt = false
 # Organiser CRUD; the shared auth guard verifies the JWT inside the function.
 verify_jwt = false
 
+[functions.events]
+# Organiser draw-builder (events, slots, fixtures, generate, publish).
+# The shared auth guard verifies the JWT inside the function.
+verify_jwt = false
+
 [analytics]
 enabled = false
