@@ -1,24 +1,24 @@
 // -----------------------------------------------------------------------------
-// fixtures-public/render.ts
+// fixtures-public/rendering/FixturesRenderer.ts
 //
 // Pure rendering for the public fixtures response. Extracted from the HTTP
-// handler so the HTML / text / JSON shapes can be exercised with unit tests
-// (no DB, no Deno APIs used here).
+// handler so the HTML, text and JSON shapes can be exercised with unit
+// tests (no DB, no Deno APIs used here).
 //
-// The public response now surfaces:
+// The public response surfaces:
 //   - `status` per fixture (scheduled / live / complete / cancelled) so a
 //     viewer can see a "LIVE" badge on in-progress games.
-//   - Current score for live / complete fixtures (from fixture_live_state
-//     or results — merged by the caller).
+//   - Current score for live / complete fixtures (merged by the caller
+//     from fixture_live_state or results).
 //
 // Accessibility note: the LIVE badge is high-contrast AND has a text label
-// ("LIVE") so users who can't see the colour still get the signal. Do not
-// change this to a colour-only indicator without adding an aria-label.
+// so users who cannot see the colour still get the signal. Do not change
+// to a colour-only indicator without adding an aria-label.
 // -----------------------------------------------------------------------------
 
 /**
- * Slot info attached to every fixture. All fields optional so a fixture
- * whose slot join failed still renders sanely.
+ * Slot info attached to every fixture. Nullable fields let a fixture whose
+ * slot join failed still render sanely.
  */
 export interface SlotInfo {
   slot_number: number;
@@ -28,7 +28,7 @@ export interface SlotInfo {
 
 /**
  * Optional score attached to a fixture. Present for `live` and `complete`
- * fixtures; omitted for `scheduled` / `cancelled`.
+ * fixtures; omitted for `scheduled` and `cancelled`.
  */
 export interface ScorePair {
   home: number;
@@ -36,8 +36,8 @@ export interface ScorePair {
 }
 
 /**
- * The public shape of a fixture that the renderers consume. The DB layer
- * shapes the row into this before calling in.
+ * The public shape of a fixture that the renderers consume. The data layer
+ * shapes the DB row into this before calling in.
  */
 export interface PublicFixture {
   id: string;
@@ -49,13 +49,12 @@ export interface PublicFixture {
   score: ScorePair | null;
 }
 
+/** The public shape of the event the fixtures belong to. */
 export interface PublicEvent {
   id: string;
   event_date: string;
   season_name: string | null;
 }
-
-// ---------- shared helpers ------------------------------------------------
 
 /**
  * Escape a string for safe HTML interpolation.
@@ -73,8 +72,8 @@ export function escapeHtml(value: string): string {
 }
 
 /**
- * Format a status for the text/HTML labels. Returns an empty string for
- * `scheduled` — the default pre-match state doesn't need decoration.
+ * Format a status for the text and HTML labels. Returns an empty string
+ * for `scheduled`: the default pre-match state does not need decoration.
  *
  * @param status - The fixture's status.
  * @returns Human label or empty string.
@@ -92,15 +91,8 @@ function statusLabel(status: PublicFixture["status"]): string {
   }
 }
 
-// ---------- text renderer -------------------------------------------------
-
 /**
  * Format a fixture as a single plain-text line. Chat-friendly.
- *
- * Examples:
- *   Slot 1 — 18:00 @ Pitch A — soccer: Reds 2–1 Blues  [LIVE]
- *   Slot 2 — 18:45 — netball: Greens vs Yellows
- *   Slot 3 — 19:30 — soccer: Purples (bye)
  *
  * @param fixture - Public fixture.
  * @returns The one-line string.
@@ -122,7 +114,7 @@ export function fixtureAsTextLine(fixture: PublicFixture): string {
     fixture.score &&
     (fixture.status === "live" || fixture.status === "complete")
   ) {
-    // Use an en-dash between scores so it's not confused with a range
+    // Use an en-dash between scores so it is not confused with a range
     // separator or a hyphenated word.
     match = `${home} ${fixture.score.home}–${fixture.score.away} ${away}`;
   } else {
@@ -135,7 +127,7 @@ export function fixtureAsTextLine(fixture: PublicFixture): string {
 }
 
 /**
- * Render the whole event as plain text — header + fixtures. The trailing
+ * Render the whole event as plain text: header plus fixtures. The trailing
  * newline is intentional so pasting into a chat app never loses the last
  * line to a redraw.
  *
@@ -153,11 +145,8 @@ export function renderText(
   return `${header}\n${body}\n`;
 }
 
-// ---------- HTML renderer -------------------------------------------------
-
 /**
- * Render one fixture's `<li>` card. Kept as its own function so the
- * template is easy to eyeball.
+ * Render one fixture's `<li>` card.
  *
  * @param fixture - Public fixture.
  * @returns HTML for the card.
@@ -209,6 +198,11 @@ export function renderFixtureCard(fixture: PublicFixture): string {
 /**
  * Render the whole event as an HTML document.
  *
+ * Badge styling: high contrast on the dark background, plus a text label so
+ * users who cannot see the colour still read "LIVE". The pulse animation
+ * only runs when `prefers-reduced-motion` is not set: a constant-flashing
+ * dot is disorienting for some users.
+ *
  * @param event - The event.
  * @param fixtures - Ordered fixtures.
  * @returns Full HTML document.
@@ -221,10 +215,6 @@ export function renderHtml(
   const title = `${escapeHtml(seasonName)} — ${escapeHtml(event.event_date)}`;
   const rows = fixtures.map(renderFixtureCard).join("");
 
-  // Badge styling: high contrast on the dark background, plus a text
-  // label so users who can't see the colour still read "LIVE". The pulse
-  // animation only runs when prefers-reduced-motion is *not* set — a
-  // constant-flashing dot is disorienting for some users.
   return `<!doctype html>
 <html lang="en">
 <head>

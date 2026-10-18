@@ -1,9 +1,9 @@
 // -----------------------------------------------------------------------------
-// _tests/fixtures-public/render.test.ts
+// tests/fixtures-public/FixturesRenderer.test.ts
 //
 // Pure-function tests for the public renderers. Covers HTML, text, JSON
-// (JSON goes through as-is, so we assert on the shape the DB layer feeds
-// the renderers) — plus the LIVE badge behaviour on each fixture status.
+// (JSON goes through as-is, so we assert on the shape the data layer feeds
+// the renderers), plus the LIVE badge behaviour on each fixture status.
 // -----------------------------------------------------------------------------
 
 import {
@@ -18,7 +18,7 @@ import {
   renderFixtureCard,
   renderHtml,
   renderText,
-} from "../../fixtures-public/render.ts";
+} from "../../supabase/functions/fixtures-public/rendering/FixturesRenderer.ts";
 
 const event: PublicEvent = {
   id: "ef111111-1111-1111-1111-111111111111",
@@ -26,9 +26,11 @@ const event: PublicEvent = {
   season_name: "Autumn 2026",
 };
 
-// Preserve explicit nulls that callers pass in — we care about the
-// difference between "not set" (use default) and "set to null" (a bye,
-// or a missing slot).
+/**
+ * Preserve explicit nulls that callers pass in. We care about the
+ * difference between "not set" (use default) and "set to null" (a bye,
+ * or a missing slot).
+ */
 function fixture(over: Partial<PublicFixture> = {}): PublicFixture {
   const defaults: PublicFixture = {
     id: "f0111111-1111-1111-1111-111111111111",
@@ -98,7 +100,7 @@ Deno.test("text: missing slot falls back cleanly", () => {
   );
 });
 
-Deno.test("renderText: begins with header + trailing newline", () => {
+Deno.test("renderText: begins with header and trailing newline", () => {
   const text = renderText(event, [fixture()]);
   assertStringIncludes(text, "Autumn 2026 — 2026-07-20");
   assertStringIncludes(text, "Tonight's draw");
@@ -172,7 +174,7 @@ Deno.test("escapeHtml: escapes all five entities", () => {
 
 Deno.test("JSON shape: score is null for scheduled, present for live/complete", () => {
   // The JSON route serialises the PublicFixture directly; this test just
-  // documents the contract the DB layer must honour.
+  // documents the contract the data layer must honour.
   const scheduled = fixture();
   assertEquals(scheduled.score, null);
   assertEquals(scheduled.status, "scheduled");
