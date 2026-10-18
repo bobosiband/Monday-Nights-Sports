@@ -1,18 +1,18 @@
 // -----------------------------------------------------------------------------
-// scoring/validate-event.ts
+// scoring/validation/EventBodyValidator.ts
 //
-// Pure validation for the record-event request body. Kept separate from
-// `handlers/events.ts` so it can be unit-tested without a Supabase client.
+// Pure validation for the record-event request body. Separate from the
+// handler so it can be unit-tested without a Supabase client.
 // -----------------------------------------------------------------------------
 
-import { isUuid, nonNegativeInt } from "../_shared/validate.ts";
-import { GENERIC_EVENT_TYPES } from "./constants.ts";
+import { isUuid, nonNegativeInt } from "../lib/InputValidation.ts";
+import { GENERIC_EVENT_TYPES } from "../domain/ScoringActions.ts";
 import type {
   FixtureContext,
   MatchEventType,
   RecordEventBody,
   SportConfig,
-} from "./types.ts";
+} from "../domain/ScoringTypes.ts";
 
 export interface ValidatedEvent {
   id: string;
@@ -32,18 +32,6 @@ export type ValidationResult =
  * Validate a record-event request body against the schema and against the
  * fixture context (team ids must match the fixture; score values must be
  * an allowed increment for the sport).
- *
- * Rules:
- * - `id` must be a UUID (client-supplied for idempotency).
- * - `type` must be one of the generic types (score, foul, card, timeout,
- *   note). period_start / period_end go through /period.
- * - `team_id` — required for score/foul/card/timeout; optional for note.
- *   When present it must be either the home or away team of the fixture.
- * - `value` — required and > 0 for score/card; must appear in
- *   `sport_config.score_increments` for score (only when the config
- *   declares increments; unconfigured sports accept any positive int).
- * - `player_id`, `period`, `match_clock_ms` — optional; when present must
- *   have the right shape.
  *
  * @param body - The parsed JSON body (possibly null).
  * @param fixture - Fixture context (used to check team_id membership).
@@ -137,10 +125,10 @@ function isGenericType(value: string): boolean {
 }
 
 /**
- * Validate `team_id` against the fixture. Score/foul/card/timeout require a
- * team; note accepts null.
+ * Validate `team_id` against the fixture. Score/foul/card/timeout require
+ * a team; note accepts null.
  *
- * @returns The validated team id (string or null), or `"invalid"` / `"required"`.
+ * @returns The validated team id, or `"invalid"` / `"required"`.
  */
 function validateTeamId(
   raw: unknown,
@@ -159,13 +147,7 @@ function validateTeamId(
 }
 
 /**
- * Validate the `value` field per event type. Rules:
- * - score: positive int; must be in sport_config.score_increments if the
- *   config declares any (unconfigured sports accept any positive int).
- * - card: positive int (severity — the fold does not read it, but writes
- *   without a value would lose intent).
- * - foul: null accepted (a foul is a count, not a value).
- * - timeout / note: value is optional; ignored if present.
+ * Validate the `value` field per event type.
  *
  * @returns Either the resolved value or an error message.
  */

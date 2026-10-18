@@ -1,15 +1,15 @@
 // -----------------------------------------------------------------------------
-// scoring/constants.ts
+// scoring/domain/ScoringActions.ts
 //
 // String constants used across the scoring service. Kept in one file so the
 // router, handlers, and tests all reference the same source of truth.
 // -----------------------------------------------------------------------------
 
-import type { MatchEventType } from "../_shared/score.ts";
+import type { MatchEventType } from "./ScoreCalculator.ts";
 
 /**
- * Route action names accepted after `/scoring/:fixtureId/`. Kept as a const
- * tuple so the router can validate the incoming action against it.
+ * Route action names accepted after `/scoring/:fixtureId/`. Kept as a
+ * const tuple so the router can validate the incoming action against it.
  */
 export const SCORING_ACTIONS = [
   "start",
@@ -36,9 +36,9 @@ export const EVENT_TYPES: readonly MatchEventType[] = [
 ] as const;
 
 /**
- * The subset of event types accepted by the generic `/events` route. Period
- * events go through `/period` so we can attach start/end semantics there;
- * accepting them here would silently bypass those guards.
+ * The subset of event types accepted by the generic `/events` route.
+ * Period events go through `/period`; accepting them here would silently
+ * bypass those guards.
  */
 export const GENERIC_EVENT_TYPES: readonly MatchEventType[] = [
   "score",
@@ -48,9 +48,7 @@ export const GENERIC_EVENT_TYPES: readonly MatchEventType[] = [
   "note",
 ] as const;
 
-/**
- * Fixture lifecycle values (mirrors 0001's fixtures.status check).
- */
+/** Fixture lifecycle values (mirrors 0001's fixtures.status check). */
 export const FIXTURE_STATUS = {
   scheduled: "scheduled",
   live: "live",
@@ -61,9 +59,7 @@ export const FIXTURE_STATUS = {
 export type FixtureStatus =
   (typeof FIXTURE_STATUS)[keyof typeof FIXTURE_STATUS];
 
-/**
- * Values accepted on `results.decided_by` (mirrors 0002).
- */
+/** Values accepted on `results.decided_by` (mirrors 0002). */
 export const DECIDED_BY = {
   normal: "normal",
   penalties: "penalties",

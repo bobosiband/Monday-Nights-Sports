@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// _tests/shared/score-mixed.test.ts
+// tests/scoring/ScoreCalculatorMixed.test.ts
 //
 // Coverage for fouls + cards flowing through the fold alongside scores.
 // The individual pieces are already tested in `score.test.ts`; these cases
@@ -11,7 +11,11 @@ import {
   assertEquals,
   assertObjectMatch,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { deriveScore, MatchEvent, SportConfig } from "../../_shared/score.ts";
+import {
+  deriveScore,
+  MatchEvent,
+  SportConfig,
+} from "../../supabase/functions/scoring/domain/ScoreCalculator.ts";
 
 const HOME = "11111111-1111-1111-1111-111111111111";
 const AWAY = "22222222-2222-2222-2222-222222222222";

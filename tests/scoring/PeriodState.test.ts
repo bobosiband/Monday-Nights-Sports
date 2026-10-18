@@ -1,12 +1,12 @@
 // -----------------------------------------------------------------------------
-// _tests/scoring/period-state.test.ts
+// tests/scoring/PeriodState.test.ts
 //
 // Tests for the periodIsOpen helper. Pure function, no DB.
 // -----------------------------------------------------------------------------
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { periodIsOpen } from "../../scoring/period-state.ts";
-import type { MatchEvent } from "../../_shared/score.ts";
+import { periodIsOpen } from "../../supabase/functions/scoring/domain/PeriodState.ts";
+import type { MatchEvent } from "../../supabase/functions/scoring/domain/ScoreCalculator.ts";
 
 /**
  * Build a period_start / period_end event. Test-only helper.

@@ -1,12 +1,12 @@
 // -----------------------------------------------------------------------------
-// _tests/scoring/period-breakdown.test.ts
+// tests/scoring/PeriodBreakdown.test.ts
 //
 // Tests for buildPeriodBreakdown. Pure function, no DB.
 // -----------------------------------------------------------------------------
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { buildPeriodBreakdown } from "../../scoring/period-breakdown.ts";
-import type { MatchEvent } from "../../_shared/score.ts";
+import { buildPeriodBreakdown } from "../../supabase/functions/scoring/domain/PeriodBreakdown.ts";
+import type { MatchEvent } from "../../supabase/functions/scoring/domain/ScoreCalculator.ts";
 
 const HOME = "11111111-1111-1111-1111-111111111111";
 const AWAY = "22222222-2222-2222-2222-222222222222";

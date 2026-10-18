@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// scoring/guard.ts
+// scoring/security/MatchTokenGuard.ts
 //
 // Match-code verification for the scoring service. Every write route funnels
 // through `verifyMatchToken` before touching the DB.
@@ -7,34 +7,30 @@
 // Verification is a single indexed lookup on `match_access.code_hash`:
 //
 //   1. Pull the bearer value off the Authorization header.
-//   2. Normalise (upper-case, strip whitespace/dashes) and SHA-256 hash it.
+//   2. Normalise and SHA-256 hash it via `MatchTokenHasher`.
 //   3. Look the hash up in `match_access`.
 //   4. Reject with the right status:
-//        - missing / malformed header      → 401
-//        - no match, expired, or revoked   → 401
-//        - row found but wrong fixture     → 403
+//        - missing / malformed header     -> 401
+//        - no match, expired, or revoked  -> 401
+//        - row found but wrong fixture    -> 403
 //   5. On success, return `{ fixture_id, access_id }` and fire-and-forget
-//      an update of `last_used_at` — we do NOT let that write's latency or
-//      failure delay the scoring response.
-//
-// No escape hatch: every write path is cryptographically bound to a real
-// `match_access` row. Local development mints codes via the seeded
-// `DEVCODE1` (see supabase/seed.sql) or via POST /match-access.
+//      an update of `last_used_at` on the row; the write's latency or
+//      failure must not delay the scoring response.
 // -----------------------------------------------------------------------------
 
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
-import { createServiceClient } from "../_shared/supabase-client.ts";
-import { extractBearer, hashMatchCode } from "../_shared/match-token.ts";
-import { forbidden, unauthorized } from "../_shared/errors.ts";
+import { createServiceClient } from "../lib/SupabaseClientFactory.ts";
+import { extractBearer, hashMatchCode } from "./MatchTokenHasher.ts";
+import { forbidden, unauthorized } from "../lib/HttpErrors.ts";
 
 /**
  * The row returned by verification on the happy path. Exposes only the
- * ids the handlers need — never the code hash.
+ * ids the handlers need, never the code hash.
  */
 export interface MatchAccessContext {
   /** The fixture the token authorises writes for. */
   fixture_id: string;
-  /** The match_access row id — for future attribution on match_events. */
+  /** The match_access row id, for future attribution on match_events. */
   access_id: string;
 }
 
@@ -51,8 +47,8 @@ interface MatchAccessRow {
  * access context; on failure returns a `Response` the router should return
  * unchanged.
  *
- * The `lookup` seam is a testing hook — production always uses the real
- * DB lookup. Tests supply a fake so they don't need a live Postgres.
+ * The `lookup` seam is a testing hook: production always uses the real
+ * DB lookup. Tests supply a fake so they do not need a live Postgres.
  *
  * @param request - The incoming request.
  * @param fixtureId - The fixture id the URL claims to target.
@@ -77,16 +73,12 @@ export async function verifyMatchToken(
     return unauthorized("Match code expired");
   }
 
-  // Fixture scope check: a valid code for fixture A must NOT be usable
-  // against fixture B. Anything else is a 403 — the credential is real,
-  // just not for this resource.
   if (row.fixture_id !== fixtureId) {
     return forbidden("Match code does not authorise this fixture");
   }
 
-  // Fire-and-forget last-used bump. The scoring write's success does NOT
-  // depend on this landing, and we swallow errors — this is telemetry,
-  // not a serialisation point.
+  // Fire-and-forget last-used bump. Scoring write success does not depend
+  // on this landing; swallow errors because this is telemetry.
   void touchLastUsed(row.id).catch((err) => {
     console.warn("match_access last_used_at update failed:", err);
   });
@@ -108,8 +100,7 @@ async function defaultLookup(
 }
 
 /**
- * Query `match_access` by `code_hash`. Extracted so tests can share the
- * shape without duplicating the SQL.
+ * Query `match_access` by `code_hash`.
  *
  * @param supabase - Service-role client.
  * @param codeHash - SHA-256 hex.

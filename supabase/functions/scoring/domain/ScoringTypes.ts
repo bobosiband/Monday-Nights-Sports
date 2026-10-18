@@ -1,9 +1,9 @@
 // -----------------------------------------------------------------------------
-// scoring/types.ts
+// scoring/domain/ScoringTypes.ts
 //
-// Request/response types local to the scoring service. Shared shapes
-// (MatchEvent, SportConfig, DerivedScore) live in `_shared/score.ts` and are
-// re-exported here so handlers only pull from one place.
+// Request / response types local to the scoring service. The shared score
+// shapes (MatchEvent, SportConfig, DerivedScore) are re-exported from
+// `ScoreCalculator.ts` so handlers import from one place.
 // -----------------------------------------------------------------------------
 
 import type {
@@ -11,9 +11,9 @@ import type {
   MatchEvent,
   MatchEventType,
   SportConfig,
-} from "../_shared/score.ts";
-import type { MatchAccessContext } from "./guard.ts";
-import type { DecidedBy, FixtureStatus } from "./constants.ts";
+} from "./ScoreCalculator.ts";
+import type { MatchAccessContext } from "../security/MatchTokenGuard.ts";
+import type { DecidedBy, FixtureStatus } from "./ScoringActions.ts";
 
 export type {
   DerivedScore,
@@ -24,8 +24,8 @@ export type {
 };
 
 /**
- * Parsed URL context resolved by the router. Passed through the guard into
- * the handler so no handler re-parses the path.
+ * Parsed URL context resolved by the router. Threaded into the handler
+ * so no handler re-parses the path.
  */
 export interface RouteContext {
   fixtureId: string;
@@ -33,8 +33,8 @@ export interface RouteContext {
 }
 
 /**
- * Fixture context loaded once at the start of a handler and threaded into
- * DB / derivation calls.
+ * Fixture context loaded once at the start of a handler and threaded
+ * into DB / derivation calls.
  */
 export interface FixtureContext {
   id: string;
@@ -46,11 +46,9 @@ export interface FixtureContext {
   status: FixtureStatus;
 }
 
-// ---------- request bodies ---------- ------------------------------------
-
 /**
- * Body accepted by POST /:fixtureId/events. `id` is client-supplied so the
- * insert is idempotent under retry.
+ * Body accepted by POST /:fixtureId/events. `id` is client-supplied so
+ * the insert is idempotent under retry.
  */
 export interface RecordEventBody {
   id?: unknown;
@@ -90,8 +88,6 @@ export interface FinalizeBody {
   reopen?: unknown;
 }
 
-// ---------- response payloads --------------------------------------------
-
 /**
  * Response returned by record/undo/period/finalize routes. Includes the
  * post-write derived score so an optimistic client can reconcile.
@@ -103,8 +99,8 @@ export interface DerivedResponse {
 }
 
 /**
- * Response returned specifically by record — echoes what the caller sent
- * so a retried insert (idempotent) still tells them which event id landed.
+ * Response returned specifically by record: echoes what the caller sent
+ * so a retried insert still tells them which event id landed.
  */
 export interface RecordEventResponse extends DerivedResponse {
   event_id: string;
@@ -112,7 +108,7 @@ export interface RecordEventResponse extends DerivedResponse {
 }
 
 /**
- * Response returned by finalize — additionally carries the snapshot that
+ * Response returned by finalize: additionally carries the snapshot that
  * was written to `results`.
  */
 export interface FinalizeResponse extends DerivedResponse {

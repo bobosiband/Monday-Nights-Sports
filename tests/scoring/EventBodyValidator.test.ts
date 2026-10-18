@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// _tests/scoring/validate-event.test.ts
+// tests/scoring/EventBodyValidator.test.ts
 //
 // Pure-function tests for the record-event validator.
 //
@@ -7,8 +7,11 @@
 // -----------------------------------------------------------------------------
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { validateRecordBody } from "../../scoring/validate-event.ts";
-import type { FixtureContext, SportConfig } from "../../scoring/types.ts";
+import { validateRecordBody } from "../../supabase/functions/scoring/validation/EventBodyValidator.ts";
+import type {
+  FixtureContext,
+  SportConfig,
+} from "../../supabase/functions/scoring/domain/ScoringTypes.ts";
 
 const FIXTURE_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa";
 const EVENT_ID = "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb";

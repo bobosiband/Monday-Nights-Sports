@@ -1,29 +1,28 @@
 // -----------------------------------------------------------------------------
-// scoring/period-breakdown.ts
+// scoring/domain/PeriodBreakdown.ts
 //
 // Pure helper: fold a match_events log into a period-by-period score
 // breakdown that is persisted into `results.periods` on finalize.
 // -----------------------------------------------------------------------------
 
-import type { MatchEvent } from "../_shared/score.ts";
-import type { PeriodBreakdown } from "./types.ts";
+import type { MatchEvent } from "./ScoreCalculator.ts";
+import type { PeriodBreakdown } from "./ScoringTypes.ts";
 
 /**
  * Build a per-period `{ period, home, away }` breakdown from a fixture's
- * event log. Score events are attributed to their own `event.period` when
- * set; otherwise to the currently-open period derived from surrounding
- * `period_start` / `period_end` events. Score events with no period
- * context (never inside an open period, no explicit period on the event)
- * are dropped from the breakdown so an incomplete log doesn't produce
- * garbage rows.
+ * event log. Score events are attributed to their own `event.period`
+ * when set; otherwise to the currently-open period derived from
+ * surrounding `period_start` / `period_end` events. Score events with no
+ * period context (never inside an open period, no explicit period on the
+ * event) are dropped from the breakdown so an incomplete log does not
+ * produce garbage rows.
  *
  * Events are assumed ordered ascending by `created_at`.
  *
  * @param events - The fixture's match_events.
  * @param homeTeamId - Home team id (used to route scores).
  * @param awayTeamId - Away team id, or null for a bye.
- * @returns Ordered array of period breakdowns; empty when no scores had
- *          a period context.
+ * @returns Ordered array of period breakdowns.
  */
 export function buildPeriodBreakdown(
   events: MatchEvent[],
@@ -59,7 +58,6 @@ export function buildPeriodBreakdown(
     }
     if (event.team_id === homeTeamId) entry.home += event.value;
     else if (event.team_id === awayTeamId) entry.away += event.value;
-    // scores attributed to unknown teams are ignored — matches deriveScore
   }
 
   return Array.from(byPeriod.entries())

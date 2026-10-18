@@ -1,11 +1,11 @@
 // -----------------------------------------------------------------------------
-// _tests/shared/match-token.test.ts
+// tests/scoring/MatchTokenHasher.test.ts
 //
-// Unit tests for the opaque match-code primitive. Everything under test is
-// pure crypto + string handling; no DB, no network. The DB revocation +
-// verification path is tested at the scoring/guard layer.
-//
-// Run with: `deno test supabase/functions/_tests/`
+// Unit tests for the verify-side half of the match-token contract.
+// Everything under test is pure crypto plus string handling: no DB, no
+// network. The mint-side twin lives in
+// `tests/match-access/MatchTokenHasher.test.ts` and must pin the same test
+// vector; if the two diverge, one of them is wrong.
 // -----------------------------------------------------------------------------
 
 import {
@@ -14,80 +14,9 @@ import {
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import {
   extractBearer,
-  generateMatchCode,
   hashMatchCode,
-  MATCH_CODE_ALPHABET,
-  MATCH_CODE_LENGTH,
   normaliseMatchCode,
-} from "../../_shared/match-token.ts";
-
-// ---------- alphabet + generation -----------------------------------------
-
-Deno.test("alphabet: excludes the confusable characters I / L / O / U", () => {
-  for (const ch of ["I", "L", "O", "U"]) {
-    assertEquals(
-      MATCH_CODE_ALPHABET.includes(ch),
-      false,
-      `alphabet must not contain ${ch}`,
-    );
-  }
-});
-
-Deno.test("alphabet: is all uppercase and digits, no duplicates", () => {
-  const seen = new Set<string>();
-  for (const ch of MATCH_CODE_ALPHABET) {
-    assertEquals(
-      /^[0-9A-Z]$/.test(ch),
-      true,
-      `unexpected alphabet char: ${ch}`,
-    );
-    assertEquals(seen.has(ch), false, `duplicate alphabet char: ${ch}`);
-    seen.add(ch);
-  }
-});
-
-Deno.test("generateMatchCode: default length matches MATCH_CODE_LENGTH", () => {
-  const code = generateMatchCode();
-  assertEquals(code.length, MATCH_CODE_LENGTH);
-});
-
-Deno.test("generateMatchCode: honours a custom length", () => {
-  assertEquals(generateMatchCode(4).length, 4);
-  assertEquals(generateMatchCode(16).length, 16);
-});
-
-Deno.test("generateMatchCode: every character is from the alphabet", () => {
-  // Generate a few dozen codes so a stray sample from outside the alphabet
-  // is overwhelmingly likely to surface.
-  for (let i = 0; i < 40; i++) {
-    const code = generateMatchCode();
-    for (const ch of code) {
-      assertEquals(
-        MATCH_CODE_ALPHABET.includes(ch),
-        true,
-        `code ${code} contains out-of-alphabet char ${ch}`,
-      );
-    }
-  }
-});
-
-Deno.test("generateMatchCode: two consecutive calls (almost never) collide", () => {
-  // Not a distribution test — just a sanity check that we're actually
-  // drawing entropy, not returning a constant.
-  const a = generateMatchCode();
-  const b = generateMatchCode();
-  assertNotEquals(a, b);
-});
-
-Deno.test("generateMatchCode: refuses a non-positive length", () => {
-  let threw = false;
-  try {
-    generateMatchCode(0);
-  } catch {
-    threw = true;
-  }
-  assertEquals(threw, true);
-});
+} from "../../supabase/functions/scoring/security/MatchTokenHasher.ts";
 
 // ---------- normalisation --------------------------------------------------
 
@@ -138,8 +67,10 @@ Deno.test("hashMatchCode: is 64 lowercase hex characters (SHA-256)", async () =>
 });
 
 Deno.test("hashMatchCode: matches the seed's pinned digest for 'DEVCODE1'", async () => {
-  // If this ever drifts, the seeded dev code in supabase/seed.sql needs
-  // its `code_hash` regenerated. See seed.sql for the shell command.
+  // Contract test vector shared with tests/match-access/MatchTokenHasher.
+  // If this ever drifts, the match-access-side twin must change to match
+  // AND the seeded dev code's `code_hash` in supabase/seed.sql must be
+  // regenerated.
   const h = await hashMatchCode("DEVCODE1");
   assertEquals(
     h,
@@ -149,6 +80,12 @@ Deno.test("hashMatchCode: matches the seed's pinned digest for 'DEVCODE1'", asyn
 
 // ---------- bearer extraction ---------------------------------------------
 
+/**
+ * Build a Request with a given Authorization header value.
+ *
+ * @param headerValue - The header value to send, or undefined.
+ * @returns A POST request to a dummy scoring URL.
+ */
 function requestWith(headerValue?: string): Request {
   const headers: Record<string, string> = {};
   if (headerValue !== undefined) headers.authorization = headerValue;

@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// _tests/scoring/guard.test.ts
+// tests/scoring/MatchTokenGuard.test.ts
 //
 // Pure-logic tests for the scoring guard. We inject a fake `lookup` so the
 // suite stays offline — the DB shape is checked at the integration layer
@@ -17,8 +17,8 @@
 // -----------------------------------------------------------------------------
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { verifyMatchToken } from "../../scoring/guard.ts";
-import { hashMatchCode } from "../../_shared/match-token.ts";
+import { verifyMatchToken } from "../../supabase/functions/scoring/security/MatchTokenGuard.ts";
+import { hashMatchCode } from "../../supabase/functions/scoring/security/MatchTokenHasher.ts";
 
 const FIXTURE = "f0111111-1111-1111-1111-111111111111";
 const OTHER_FIXTURE = "f9999999-9999-9999-9999-999999999999";
