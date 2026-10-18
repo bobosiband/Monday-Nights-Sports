@@ -7,6 +7,10 @@
     "lint": "deno lint"
   },
   "fmt": {
+    "lineWidth": 80,
+    "indentWidth": 2,
+    "semiColons": true,
+    "singleQuote": false,
     "exclude": [
       "supabase/functions/api-docs/openapi.ts",
       "docs/openapi.yaml",
