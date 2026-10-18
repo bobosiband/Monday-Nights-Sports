@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// _tests/shared/round-robin.test.ts
+// tests/events/RoundRobinGenerator.test.ts
 //
 // Pure-logic tests for `generateRoundRobin`. Locks in the algorithm's
 // three critical invariants — every pair meets exactly once, byes are
@@ -17,7 +17,7 @@ import {
 import {
   generateRoundRobin,
   type RoundRobinFixture,
-} from "../../_shared/round-robin.ts";
+} from "../../supabase/functions/events/domain/RoundRobinGenerator.ts";
 
 /**
  * Build a canonical, unordered key for a pair of team ids so we can

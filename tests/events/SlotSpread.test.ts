@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// _tests/events/spread.test.ts
+// tests/events/SlotSpread.test.ts
 //
 // Pure-logic tests for `spreadAcrossSlots`. The dry-run preview and the
 // insert path both feed on this output, so we need every failure mode and
@@ -12,8 +12,8 @@ import {
   assert,
   assertEquals,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { spreadAcrossSlots } from "../../events/spread.ts";
-import { generateRoundRobin } from "../../_shared/round-robin.ts";
+import { spreadAcrossSlots } from "../../supabase/functions/events/domain/SlotSpread.ts";
+import { generateRoundRobin } from "../../supabase/functions/events/domain/RoundRobinGenerator.ts";
 
 Deno.test("empty pairings returns an empty fixture list, not an error", () => {
   const result = spreadAcrossSlots({ pairings: [], slot_ids: ["s1", "s2"] });

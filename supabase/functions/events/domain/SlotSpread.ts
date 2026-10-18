@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// events/spread.ts
+// events/domain/SlotSpread.ts
 //
 // Pure mapping from round-robin rounds onto the event's time slots. Kept
 // deterministic and side-effect-free so `POST /events/:id/generate?dry_run`
@@ -22,7 +22,7 @@
 // balancing, which is out of scope for Sprint F (single round-robin only).
 // -----------------------------------------------------------------------------
 
-import type { RoundRobinFixture } from "../_shared/round-robin.ts";
+import type { RoundRobinFixture } from "./RoundRobinGenerator.ts";
 
 /**
  * A proposed fixture ready to be inserted. `slot_id` is filled from the

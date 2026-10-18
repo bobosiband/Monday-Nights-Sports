@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// _tests/events/validate-body.test.ts
+// tests/events/EventBodyValidator.test.ts
 //
 // Pure-logic tests for the events body validators. These fire on every write
 // route, so a regression here is a regression on the whole draw-builder.
@@ -26,7 +26,7 @@ import {
   validateUpdateEvent,
   validateUpdateFixture,
   validateUpdateSlot,
-} from "../../events/validate-body.ts";
+} from "../../supabase/functions/events/validation/EventBodyValidator.ts";
 
 // ---------------------------------------------------------------------------
 // Primitives

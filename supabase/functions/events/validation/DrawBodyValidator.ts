@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// events/validate-draw.ts
+// events/validation/DrawBodyValidator.ts
 //
 // Pure pre-flight for `POST /events/:id/publish`. Publishing is the safety
 // boundary: RLS exposes everything under a published event to `anon`, so

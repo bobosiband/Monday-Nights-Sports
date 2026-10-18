@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// _tests/events/validate-draw.test.ts
+// tests/events/DrawBodyValidator.test.ts
 //
 // Pure-logic tests for `validatePublish` and `validateUnpublish`. Publish
 // is the safety boundary — the moment `is_published` flips, RLS opens
@@ -17,7 +17,7 @@ import {
   type DraftFixture,
   validatePublish,
   validateUnpublish,
-} from "../../events/validate-draw.ts";
+} from "../../supabase/functions/events/validation/DrawBodyValidator.ts";
 
 /** A syntactically-valid fixture for the happy path. */
 function goodFixture(overrides: Partial<DraftFixture> = {}): DraftFixture {

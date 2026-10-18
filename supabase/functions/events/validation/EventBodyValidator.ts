@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// events/validate-body.ts
+// events/validation/EventBodyValidator.ts
 //
 // Pure body validators for every write route on `events`. Extracting them
 // here keeps the HTTP handlers thin and lets the tests hit every failure
@@ -13,7 +13,7 @@
 // can pattern-match one style across the whole codebase.
 // -----------------------------------------------------------------------------
 
-import { isUuid, nonEmptyString } from "../_shared/validate.ts";
+import { isUuid, nonEmptyString } from "../lib/InputValidation.ts";
 
 /** Ok branch of a validated body. */
 export interface Ok<T> {
