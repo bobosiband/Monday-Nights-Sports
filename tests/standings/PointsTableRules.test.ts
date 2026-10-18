@@ -1,37 +1,37 @@
 // -----------------------------------------------------------------------------
-// _tests/shared/standings.test.ts
+// tests/standings/PointsTableRules.test.ts
 //
 // Unit tests for the pure standings computation. Covers:
 //   - empty season
 //   - a clean multi-team table
 //   - points tie broken by goal difference
-//   - points + GD tie broken by goals-for
-//   - unknown tiebreaker string is ignored (doesn't crash)
+//   - points plus GD tie broken by goals-for
+//   - unknown tiebreaker string is ignored (does not crash)
 //   - byes contribute nothing to either team
 //   - netball's 2/1/0 config produces different order from soccer's 3/1/0
 //   - config-absent path falls back to the 3/1/0 default
 // -----------------------------------------------------------------------------
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import {
-  computeStandings,
-  type FinishedFixture,
-} from "../../_shared/standings.ts";
-import type { SportConfig } from "../../_shared/score.ts";
+import type {
+  FinishedFixture,
+  StandingsConfig,
+} from "../../supabase/functions/standings/domain/StandingsTypes.ts";
+import { PointsTableRules } from "../../supabase/functions/standings/domain/StandingsRules.ts";
 
 const REDS = "a1111111-1111-1111-1111-111111111111";
 const BLUES = "a2222222-2222-2222-2222-222222222222";
 const GREENS = "a3333333-3333-3333-3333-333333333333";
 const YELLOWS = "a4444444-4444-4444-4444-444444444444";
 
-const soccerConfig: SportConfig = {
+const soccerConfig: StandingsConfig = {
   standings: {
     points: { win: 3, draw: 1, loss: 0 },
     tiebreakers: ["points", "goal_diff", "goals_for"],
   },
 };
 
-const netballConfig: SportConfig = {
+const netballConfig: StandingsConfig = {
   standings: {
     points: { win: 2, draw: 1, loss: 0 },
     tiebreakers: ["points", "goal_diff", "goals_for"],
@@ -42,7 +42,7 @@ const netballConfig: SportConfig = {
  * Build a FinishedFixture with sensible defaults.
  *
  * @param over - Overrides.
- * @returns A fixture ready for computeStandings.
+ * @returns A fixture ready for the standings rules.
  */
 function fx(
   over: Partial<FinishedFixture> & {
@@ -60,11 +60,25 @@ function fx(
   };
 }
 
-Deno.test("empty season → empty table", () => {
+/**
+ * Shorthand for building the rules and computing in one call.
+ *
+ * @param fixtures - Finished fixtures.
+ * @param config - Standings config.
+ * @returns The sorted standings rows.
+ */
+function computeStandings(
+  fixtures: FinishedFixture[],
+  config: StandingsConfig,
+) {
+  return new PointsTableRules(config).computeTable(fixtures);
+}
+
+Deno.test("empty season produces an empty table", () => {
   assertEquals(computeStandings([], soccerConfig), []);
 });
 
-Deno.test("clean table: two wins > one win > no wins, points ordering", () => {
+Deno.test("clean table: two wins over one win over no wins, points ordering", () => {
   const rows = computeStandings(
     [
       fx({
@@ -163,7 +177,7 @@ Deno.test("goal_diff tiebreaker breaks a points tie", () => {
 });
 
 Deno.test("unknown tiebreaker string is skipped, not crashed", () => {
-  const config: SportConfig = {
+  const config: StandingsConfig = {
     standings: {
       points: { win: 3, draw: 1, loss: 0 },
       tiebreakers: ["reindeer", "points", "goal_diff"],
@@ -187,7 +201,7 @@ Deno.test("unknown tiebreaker string is skipped, not crashed", () => {
 });
 
 Deno.test("byes contribute nothing to either team", () => {
-  // Reds plays Blues + a bye. Bye must not touch either side's counters.
+  // Reds plays Blues plus a bye. Bye must not touch either side's counters.
   const rows = computeStandings(
     [
       fx({
@@ -242,7 +256,7 @@ Deno.test("netball 2-point-win config produces different totals from soccer's 3"
 });
 
 Deno.test("absent standings block falls back to 3/1/0", () => {
-  const empty: SportConfig = {}; // no `standings` at all
+  const empty: StandingsConfig = {};
   const rows = computeStandings(
     [
       fx({
@@ -278,7 +292,7 @@ Deno.test("goal_diff is populated on the returned rows", () => {
 });
 
 Deno.test("final tiebreaker is alphabetical by team name (deterministic)", () => {
-  // Two teams with identical everything → alphabetical.
+  // Two teams with identical everything -> alphabetical.
   const rows = computeStandings(
     [
       fx({
