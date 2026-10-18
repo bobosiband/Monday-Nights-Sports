@@ -13,10 +13,10 @@ public interface DrawStrategy {
   /**
    * Build the proposed pairings for a draw.
    *
-   * @param teamIds Team ids in the order the caller wants seated. The strategy must not
-   *     mutate the input.
-   * @return An ordered list of pairings, 1-indexed by round. May be empty when the input has
-   *     fewer than two teams.
+   * @param teamIds Team ids in the order the caller wants seated. The strategy must not mutate the
+   *     input.
+   * @return An ordered list of pairings, 1-indexed by round. May be empty when the input has fewer
+   *     than two teams.
    */
   List<Pairing> buildDraw(List<String> teamIds);
 }

@@ -33,8 +33,7 @@ final class DrawGeneratorHandlerTest {
   @Test
   void happyPostReturnsFixtures() throws Exception {
     String body =
-        "{\"teamIds\":[\"A\",\"B\",\"C\",\"D\"],"
-            + "\"slotIds\":[\"S1\",\"S2\",\"S3\",\"S4\"]}";
+        "{\"teamIds\":[\"A\",\"B\",\"C\",\"D\"]," + "\"slotIds\":[\"S1\",\"S2\",\"S3\",\"S4\"]}";
     APIGatewayV2HTTPEvent event = postEvent(body);
 
     APIGatewayV2HTTPResponse response = handler.handleRequest(event, null);
@@ -58,8 +57,7 @@ final class DrawGeneratorHandlerTest {
 
     assertEquals(400, response.getStatusCode());
     JsonNode payload = mapper.readTree(response.getBody());
-    assertEquals(
-        "teamIds must be an array of at least 2 ids", payload.get("error").asText());
+    assertEquals("teamIds must be an array of at least 2 ids", payload.get("error").asText());
   }
 
   @Test
@@ -113,8 +111,7 @@ final class DrawGeneratorHandlerTest {
         new DrawGeneratorHandler(
             mapper, bomb, new WrapAroundSlotAssigner(), new DrawRequestValidator());
 
-    APIGatewayV2HTTPEvent event =
-        postEvent("{\"teamIds\":[\"A\",\"B\"],\"slotIds\":[\"S1\"]}");
+    APIGatewayV2HTTPEvent event = postEvent("{\"teamIds\":[\"A\",\"B\"],\"slotIds\":[\"S1\"]}");
 
     APIGatewayV2HTTPResponse response = brokenHandler.handleRequest(event, null);
 
@@ -128,11 +125,9 @@ final class DrawGeneratorHandlerTest {
 
   @Test
   void jsonContentTypeHeaderIsSet() throws Exception {
-    APIGatewayV2HTTPEvent event =
-        postEvent("{\"teamIds\":[\"A\",\"B\"],\"slotIds\":[\"S1\"]}");
+    APIGatewayV2HTTPEvent event = postEvent("{\"teamIds\":[\"A\",\"B\"],\"slotIds\":[\"S1\"]}");
     APIGatewayV2HTTPResponse response = handler.handleRequest(event, null);
-    assertTrue(
-        response.getHeaders().getOrDefault("Content-Type", "").contains("application/json"));
+    assertTrue(response.getHeaders().getOrDefault("Content-Type", "").contains("application/json"));
   }
 
   private APIGatewayV2HTTPEvent postEvent(String body) {

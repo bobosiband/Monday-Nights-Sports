@@ -15,12 +15,11 @@ public interface SlotAssigner {
    * Distribute pairings across slots.
    *
    * @param pairings Pairings from a {@link DrawStrategy}; must not be null.
-   * @param slotIds Ordered slot ids; must not be null. May be empty only when pairings is
-   *     also empty (which returns an empty proposed-fixture list).
-   * @return An ordered list of proposed fixtures, each carrying its slot id and round
-   *     number.
-   * @throws IllegalArgumentException if there are pairings but no slots, or if slotIds
-   *     contains a duplicate.
+   * @param slotIds Ordered slot ids; must not be null. May be empty only when pairings is also
+   *     empty (which returns an empty proposed-fixture list).
+   * @return An ordered list of proposed fixtures, each carrying its slot id and round number.
+   * @throws IllegalArgumentException if there are pairings but no slots, or if slotIds contains a
+   *     duplicate.
    */
   List<ProposedFixture> assign(List<Pairing> pairings, List<String> slotIds);
 }

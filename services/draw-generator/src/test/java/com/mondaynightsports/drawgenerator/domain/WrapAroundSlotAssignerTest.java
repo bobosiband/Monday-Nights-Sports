@@ -32,8 +32,7 @@ final class WrapAroundSlotAssignerTest {
   void pairingsRequireAtLeastOneSlot() {
     List<Pairing> pairings = strategy.buildDraw(List.of("A", "B"));
     assertThrows(
-        IllegalArgumentException.class,
-        () -> assigner.assign(pairings, Collections.emptyList()));
+        IllegalArgumentException.class, () -> assigner.assign(pairings, Collections.emptyList()));
   }
 
   @Test

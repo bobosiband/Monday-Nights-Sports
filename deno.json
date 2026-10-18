@@ -14,7 +14,8 @@
     "exclude": [
       "supabase/functions/api-docs/openapi.ts",
       "docs/openapi.yaml",
-      "docs/archive/"
+      "docs/archive/",
+      "services/"
     ]
   },
   "lint": {

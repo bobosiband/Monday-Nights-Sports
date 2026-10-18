@@ -74,12 +74,11 @@ public final class DrawGeneratorHandler
    *
    * @param event The API Gateway v2 HTTP event (works for function URLs too).
    * @param context Lambda context; may be null in tests.
-   * @return The response: 200 on success, 400 on validation, 405 on method, 500 on
-   *     unexpected failures. The 500 does not leak a stack trace to the client.
+   * @return The response: 200 on success, 400 on validation, 405 on method, 500 on unexpected
+   *     failures. The 500 does not leak a stack trace to the client.
    */
   @Override
-  public APIGatewayV2HTTPResponse handleRequest(
-      APIGatewayV2HTTPEvent event, Context context) {
+  public APIGatewayV2HTTPResponse handleRequest(APIGatewayV2HTTPEvent event, Context context) {
     try {
       String method = httpMethod(event);
       if (method == null || !method.equalsIgnoreCase("POST")) {
@@ -114,8 +113,8 @@ public final class DrawGeneratorHandler
   }
 
   /**
-   * Pull the HTTP method off the event. API Gateway v2 populates
-   * requestContext.http.method; function URLs populate the same field.
+   * Pull the HTTP method off the event. API Gateway v2 populates requestContext.http.method;
+   * function URLs populate the same field.
    *
    * @param event The event.
    * @return Uppercase method or null.
@@ -132,8 +131,7 @@ public final class DrawGeneratorHandler
   }
 
   /**
-   * Parse the JSON body into a request record, honouring base64 encoding when
-   * API Gateway flags it.
+   * Parse the JSON body into a request record, honouring base64 encoding when API Gateway flags it.
    *
    * @param event The event.
    * @return The parsed request, or null when the body is missing or unparseable.

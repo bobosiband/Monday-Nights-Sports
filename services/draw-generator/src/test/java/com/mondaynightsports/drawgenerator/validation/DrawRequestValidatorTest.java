@@ -37,10 +37,8 @@ final class DrawRequestValidatorTest {
 
   @Test
   void teamIdsEntriesMustBeNonEmpty() {
-    GenerateDrawRequest r1 =
-        new GenerateDrawRequest(Arrays.asList("A", null), List.of("S1"));
-    assertEquals(
-        "teamIds entries must be non-empty strings", validator.validate(r1).error());
+    GenerateDrawRequest r1 = new GenerateDrawRequest(Arrays.asList("A", null), List.of("S1"));
+    assertEquals("teamIds entries must be non-empty strings", validator.validate(r1).error());
 
     GenerateDrawRequest r2 = new GenerateDrawRequest(List.of("A", "  "), List.of("S1"));
     assertFalse(validator.validate(r2).ok());
@@ -54,17 +52,14 @@ final class DrawRequestValidatorTest {
 
   @Test
   void slotIdsMustBeNonEmpty() {
-    GenerateDrawRequest r =
-        new GenerateDrawRequest(List.of("A", "B"), Collections.emptyList());
+    GenerateDrawRequest r = new GenerateDrawRequest(List.of("A", "B"), Collections.emptyList());
     assertEquals("slotIds must be a non-empty array", validator.validate(r).error());
   }
 
   @Test
   void slotIdsEntriesMustBeNonEmpty() {
-    GenerateDrawRequest r =
-        new GenerateDrawRequest(List.of("A", "B"), Arrays.asList("S1", null));
-    assertEquals(
-        "slotIds entries must be non-empty strings", validator.validate(r).error());
+    GenerateDrawRequest r = new GenerateDrawRequest(List.of("A", "B"), Arrays.asList("S1", null));
+    assertEquals("slotIds entries must be non-empty strings", validator.validate(r).error());
   }
 
   @Test
@@ -75,8 +70,7 @@ final class DrawRequestValidatorTest {
 
   @Test
   void wellFormedRequestPasses() {
-    GenerateDrawRequest r =
-        new GenerateDrawRequest(List.of("A", "B", "C"), List.of("S1", "S2"));
+    GenerateDrawRequest r = new GenerateDrawRequest(List.of("A", "B", "C"), List.of("S1", "S2"));
     assertTrue(validator.validate(r).ok());
   }
 }

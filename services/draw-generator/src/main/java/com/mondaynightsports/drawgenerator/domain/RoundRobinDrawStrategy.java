@@ -24,19 +24,18 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Round-robin strategy: every unordered pair of teams meets exactly once.
- * Deterministic for a given input order; shuffle the input upstream if a
- * randomised seeding is wanted.
+ * Round-robin strategy: every unordered pair of teams meets exactly once. Deterministic for a given
+ * input order; shuffle the input upstream if a randomised seeding is wanted.
  */
 public final class RoundRobinDrawStrategy implements DrawStrategy {
 
   /**
    * Generate the pairings for the given team ids.
    *
-   * @param teamIds Team ids in seat order. 0-length and 1-length inputs return an empty
-   *     list (a single team cannot play itself).
-   * @return The pairings, ordered by round ascending. For odd team counts the number of
-   *     rounds equals the team count; for even counts it is one less.
+   * @param teamIds Team ids in seat order. 0-length and 1-length inputs return an empty list (a
+   *     single team cannot play itself).
+   * @return The pairings, ordered by round ascending. For odd team counts the number of rounds
+   *     equals the team count; for even counts it is one less.
    * @throws NullPointerException if teamIds or any element is null.
    */
   @Override
@@ -90,8 +89,7 @@ public final class RoundRobinDrawStrategy implements DrawStrategy {
   }
 
   /**
-   * Build the even-length seat array for an odd input by appending a null sentinel at the
-   * end.
+   * Build the even-length seat array for an odd input by appending a null sentinel at the end.
    *
    * @param teamIds Original odd-length team ids.
    * @return Seat array with trailing null.
@@ -103,8 +101,8 @@ public final class RoundRobinDrawStrategy implements DrawStrategy {
   }
 
   /**
-   * In-place clockwise rotation of seats[1..n-1] by one position, with seats[0] left fixed.
-   * This is the "fix one, rotate the rest" step of the circle method.
+   * In-place clockwise rotation of seats[1..n-1] by one position, with seats[0] left fixed. This is
+   * the "fix one, rotate the rest" step of the circle method.
    *
    * @param seats The working seat array; mutated in place.
    */

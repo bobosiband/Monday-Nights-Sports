@@ -15,10 +15,7 @@
   implementations assert against the same JSON fixtures so neither side
   can drift silently.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0                              http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.mondaynightsports</groupId>
@@ -27,10 +24,8 @@
   <packaging>jar</packaging>
 
   <name>draw-generator</name>
-  <description>
-    AWS Lambda starter: Java 21 implementation of the Monday Night Sports
-    round-robin draw generator. Stateless, no database access, no network.
-  </description>
+  <description>AWS Lambda starter: Java 21 implementation of the Monday Night Sports
+    round-robin draw generator. Stateless, no database access, no network.</description>
 
   <properties>
     <maven.compiler.source>21</maven.compiler.source>
@@ -44,7 +39,6 @@
     <junit.jupiter.version>5.14.4</junit.jupiter.version>
 
     <spotless.version>3.10.4</spotless.version>
-    <google.java.format.version>1.37.0</google.java.format.version>
 
     <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
     <maven.surefire.plugin.version>3.5.3</maven.surefire.plugin.version>
@@ -113,26 +107,26 @@
         <configuration>
           <java>
             <googleJavaFormat>
-              <version>${google.java.format.version}</version>
-              <style>
-              GOOGLE
-              </style>
+              <!-- Version omitted on purpose: Spotless picks the default
+                   that is known-compatible with the running JVM (1.30.0
+                   on JVM 21+). -->
+              <style>GOOGLE</style>
               <reflowLongStrings>true</reflowLongStrings>
             </googleJavaFormat>
-            <removeUnusedImports />
-            <trimTrailingWhitespace />
-            <endWithNewline />
+            <removeUnusedImports/>
+            <trimTrailingWhitespace/>
+            <endWithNewline/>
           </java>
           <pom>
-            <sortPom />
+            <sortPom/>
           </pom>
         </configuration>
         <executions>
           <execution>
-            <phase>verify</phase>
             <goals>
               <goal>check</goal>
             </goals>
+            <phase>verify</phase>
           </execution>
         </executions>
       </plugin>

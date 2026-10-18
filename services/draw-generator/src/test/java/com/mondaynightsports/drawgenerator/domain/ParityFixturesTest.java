@@ -43,8 +43,7 @@ final class ParityFixturesTest {
   static Stream<JsonNode> parityFixtures() throws Exception {
     List<JsonNode> out = new ArrayList<>();
     for (String path : FIXTURE_FILES) {
-      try (InputStream in =
-          ParityFixturesTest.class.getClassLoader().getResourceAsStream(path)) {
+      try (InputStream in = ParityFixturesTest.class.getClassLoader().getResourceAsStream(path)) {
         assertNotNull(in, "missing parity fixture on classpath: " + path);
         out.add(MAPPER.readTree(in));
       }

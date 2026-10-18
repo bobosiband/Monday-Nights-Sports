@@ -123,8 +123,7 @@ final class RoundRobinDrawStrategyTest {
     for (int n = 3; n <= 11; n += 2) {
       for (Pairing p : strategy.buildDraw(teamIds(n))) {
         if (p.awayTeamId() == null) {
-          assertFalse(
-              p.homeTeamId() == null, "home must be real on a bye at round " + p.round());
+          assertFalse(p.homeTeamId() == null, "home must be real on a bye at round " + p.round());
         }
       }
     }

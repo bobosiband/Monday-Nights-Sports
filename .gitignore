@@ -15,10 +15,12 @@ coverage/
 
 # --- Java (Maven) ---
 # The draw-generator service uses Maven; keep this global so a future
-# Java service does not have to repeat it.
+# Java service does not have to repeat it. `.mvn/wrapper/` holds downloaded
+# wrapper binaries that are not source-controlled; `.mvn/jvm.config` and
+# `.mvn/maven.config` are deliberately checked in.
 target/
 *.class
-.mvn/
+.mvn/wrapper/
 
 # --- Supabase local dev ---
 supabase/.temp/

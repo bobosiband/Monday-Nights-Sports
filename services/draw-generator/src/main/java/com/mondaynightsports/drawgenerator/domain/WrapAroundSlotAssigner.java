@@ -27,8 +27,8 @@ public final class WrapAroundSlotAssigner implements SlotAssigner {
    * @param slotIds Ordered slot ids; must not be null.
    * @return The proposed fixtures.
    * @throws NullPointerException if either argument is null, or if slotIds contains null.
-   * @throws IllegalArgumentException if there are pairings but no slots, or if slotIds
-   *     contains duplicates.
+   * @throws IllegalArgumentException if there are pairings but no slots, or if slotIds contains
+   *     duplicates.
    */
   @Override
   public List<ProposedFixture> assign(List<Pairing> pairings, List<String> slotIds) {

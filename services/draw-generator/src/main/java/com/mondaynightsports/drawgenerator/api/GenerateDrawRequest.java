@@ -17,8 +17,8 @@ import java.util.List;
 public record GenerateDrawRequest(List<String> teamIds, List<String> slotIds) {
 
   /**
-   * Jackson constructor. Explicit because the records' default constructor relies on
-   * `-parameters` compiler flag otherwise.
+   * Jackson constructor. Explicit because the records' default constructor relies on `-parameters`
+   * compiler flag otherwise.
    *
    * @param teamIds team ids from JSON key `teamIds`.
    * @param slotIds slot ids from JSON key `slotIds`.
