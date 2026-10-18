@@ -141,8 +141,9 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST \
 ```
 
 Must print **401**. If it prints 200 or 2xx, stop everything and audit
-`supabase/functions/scoring/guard.ts` before touching anything else — a bypassed
-guard is the failure mode the whole match-code design exists to prevent.
+`supabase/functions/scoring/security/MatchTokenGuard.ts` before touching
+anything else; a bypassed guard is the failure mode the whole match-code design
+exists to prevent.
 
 ---
 

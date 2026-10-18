@@ -28,8 +28,9 @@ Two headers matter:
 - `authorization: Bearer <token>` — required for organiser routes (JWT) and
   scoring routes (operator code). See "Two auth stories" below.
 
-CORS is on for every function via `_shared/cors.ts`. Preflight requests return
-204 with the right headers, so `fetch` from a browser Just Works.
+CORS is on for every function via each service's `lib/Cors.ts` (local copy per
+ADR 0007). Preflight requests return 204 with the right headers, so `fetch` from
+a browser Just Works.
 
 ---
 
@@ -134,8 +135,8 @@ The full arc, all HTTP, no SQL. Assumes an organiser JWT in `$JWT`.
 ```
 
 Publishing runs a structural pre-flight (`validatePublish` in
-`events/validate-draw.ts`). It refuses with 409 and a specific `error` string
-when:
+`events/validation/DrawBodyValidator.ts`). It refuses with 409 and a specific
+`error` string when:
 
 - The event has zero fixtures.
 - A fixture has no slot, or points at a slot that isn't on this event.

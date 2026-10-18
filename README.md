@@ -7,33 +7,40 @@ machine → [`docs/local-setup.md`](docs/local-setup.md).** **Interactive API do
 
 Supabase-native backend for a weekly college sports competition. Multiple sports
 run across four evening slots each Monday; this repo hosts the API/services that
-manage seasons, teams, fixtures, results, and (later) live scoring. The frontend
-team picks their stack separately — everything here is a self-contained
-API/service they can consume.
+manage seasons, teams, fixtures, results, and live scoring. The frontend team
+picks their stack separately: everything here is a self-contained API/service
+they can consume.
 
 ## Stack
 
-- **Postgres** (via Supabase) — source of truth, with row-level security for the
+- **Postgres** (via Supabase): source of truth, with row-level security for the
   public/organiser split.
-- **Supabase Edge Functions** (Deno + TypeScript) — one microservice per folder
-  under `supabase/functions/`. Shared code lives in `_shared/` (Supabase does
-  not deploy underscore-prefixed folders as functions).
-- **Supabase Auth** — organiser sign-in; write endpoints require a valid JWT.
+- **Supabase Edge Functions** (Deno + TypeScript): one microservice per folder
+  under `supabase/functions/`. Each service is self-contained; there is no
+  `_shared/` folder. See
+  [ADR 0007](docs/decisions/0007-service-ownership-and-layout.md) and
+  [`docs/conventions.md`](docs/conventions.md).
+- **Supabase Auth**: organiser sign-in; write endpoints require a valid JWT.
+- **Java 21 (starter)**: `services/draw-generator/` is a Maven project carrying
+  a parallel implementation of the round-robin draw generator, destined for AWS
+  Lambda. It builds and tests locally; it is not deployed by any script here and
+  is not wired into the TypeScript `events` service.
 
 ## Repository layout
 
 ```
 monday-night-sports/
 ├── docs/
-│   ├── overview.md                     # start here — what this system does
+│   ├── overview.md                     # start here, what this system does
+│   ├── conventions.md                  # naming / layout / SOLID conventions
 │   ├── frontend-api-guide.md           # narrative guide for frontend consumers
 │   ├── scoring-viewing-backend-plan.md # live design doc for the scoring stack
 │   ├── local-setup.md                  # everything you need to run it locally
 │   ├── realtime.md                     # Supabase Realtime client protocol
 │   ├── openapi.yaml                    # source-of-truth API spec (Swagger UI)
-│   ├── sprint-1.md                     # Sprint 1 running log
-│   ├── sprints-c-d-e.md                # Sprints C/D/E running log
-│   └── decisions/                      # ADRs (0001-0006)
+│   ├── sprint-1.md                     # Sprint 1 running log (historical)
+│   ├── sprints-c-d-e.md                # Sprints C/D/E running log (historical)
+│   └── decisions/                      # ADRs (0001-0007)
 ├── scripts/
 │   ├── deploy.sh                       # one-command hosted deploy
 │   ├── seed-remote.sh                  # psql wrapper for hosted seeding
@@ -41,7 +48,19 @@ monday-night-sports/
 │   ├── smoke-live.sh                   # local smoke walkthrough
 │   ├── rebuild-live-state.sql          # rebuild the realtime projection
 │   ├── sync-openapi.sh                 # embed openapi.yaml into api-docs
+│   ├── check-service-boundaries.sh     # CI guardrail: no cross-service imports, no emojis
 │   └── regenerate-tracking.sh          # regenerate GitHub milestones/stories
+├── tests/
+│   ├── api-docs/                       # per-service unit test tree, one folder per service
+│   ├── events/
+│   ├── fixtures-public/
+│   ├── match-access/
+│   ├── scoring/
+│   ├── sport-configs/
+│   ├── standings/
+│   └── integration/                    # INTEGRATION=1 opt-in, hits a real stack
+├── services/
+│   └── draw-generator/                 # Java 21 Lambda starter (not deployed)
 └── supabase/
     ├── config.toml                     # local dev config (safe to commit)
     ├── migrations/
@@ -50,31 +69,25 @@ monday-night-sports/
     │   ├── 0003_grants.sql
     │   └── 0004_operator_access_and_live.sql
     ├── seed.sql                        # demo season + dev operator code
-    └── functions/
-        ├── _shared/                    # not deployed as a function
-        │   ├── auth.ts                 # organiser JWT guard
-        │   ├── cors.ts                 # CORS helpers
-        │   ├── errors.ts               # typed 4xx/5xx response helpers
-        │   ├── http.ts                 # subPath router helper
-        │   ├── match-token.ts          # opaque operator-code primitive
-        │   ├── round-robin.ts          # pure draw-generator (used by events/)
-        │   ├── score.ts                # pure score-derivation fold
-        │   ├── standings.ts            # pure standings computation
-        │   ├── supabase-client.ts      # service-role client factory
-        │   └── validate.ts             # shared input validators
-        ├── api-docs/                   # Swagger UI + embedded OpenAPI
-        ├── events/                     # organiser: draw builder (events/slots/fixtures/generate/publish)
+    └── functions/                      # one service per folder, each self-contained
+        ├── api-docs/                   # Swagger UI redirect + embedded OpenAPI
+        ├── events/                     # organiser draw builder (events/slots/fixtures/generate/publish)
         ├── fixtures-public/            # public draw (HTML / text / JSON, LIVE badge)
         ├── live/                       # public live-score endpoint
-        ├── match-access/               # organiser: mint / revoke operator codes
+        ├── match-access/               # organiser mint / revoke operator codes
         ├── results-public/             # public archive of past events
         ├── scoring/                    # match-code-guarded scoring writes
-        ├── seasons/                    # organiser: season management
-        ├── sport-configs/              # organiser: per-sport config CRUD
+        ├── seasons/                    # organiser season management
+        ├── sport-configs/              # organiser per-sport config CRUD
         ├── standings/                  # public standings (per season, per sport)
-        ├── teams/                      # organiser: team management
-        └── _tests/                     # deno test suite (unit + integration)
+        └── teams/                      # organiser team management
 ```
+
+Each folder under `supabase/functions/<service>/` follows the layered layout
+from ADR 0007: `index.ts` (entry only), a router, and the relevant subset of
+`handlers/`, `data/`, `domain/`, `security/`, `validation/`, `rendering/` and
+`lib/`. See the service's own `README.md` for its routes and rules, and its
+`.env.example` for the environment variables it reads.
 
 ## Prerequisites
 

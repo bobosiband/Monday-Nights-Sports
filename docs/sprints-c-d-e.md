@@ -1,5 +1,9 @@
 # Sprints C, D & E — Operator access, live viewing, standings & archive
 
+> File paths in this document reflect the service layout at the time of Sprints
+> C/D/E. The current layout is set by
+> [ADR 0007](decisions/0007-service-ownership-and-layout.md).
+
 Running log for the C/D/E chunk. Every row maps roughly to a commit; the "how to
 exercise" section at the end walks the full arc.
 
