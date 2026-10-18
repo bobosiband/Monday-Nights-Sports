@@ -1,16 +1,8 @@
 // -----------------------------------------------------------------------------
 // tests/scoring/ScoreCalculator.test.ts
 //
-// Unit tests for the score-derivation fold in `../../_shared/score.ts`.
+// Unit tests for the score-derivation fold owned by the scoring service.
 // Pure function so we can exercise every branch without a Supabase client.
-//
-// Note: the story spec referred to this file as
-// `_shared/score.test.ts`, but the repo convention (established in an
-// earlier commit) puts every test tree under `_tests/` — with a leading
-// underscore so Supabase does not deploy it as an Edge Function. Same
-// content, honoured location.
-//
-// Run with: `deno test supabase/functions/_tests/`
 // -----------------------------------------------------------------------------
 
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";

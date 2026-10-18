@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// _tests/integration/helpers.ts
+// tests/integration/helpers.ts
 //
 // Shared helpers for integration tests that hit a live local Supabase stack
 // (`supabase start` + `supabase db reset`). They are opt-in via the
@@ -74,7 +74,8 @@ export function skipUnlessIntegration(
  * If the user already exists from a prior run we fall back to password grant.
  *
  * The existing `requireOrganiser` guard treats any authenticated user as an
- * organiser (see _shared/auth.ts), so no role plumbing is required.
+ * organiser (see each service's lib/OrganiserAuthGuard.ts), so no role
+ * plumbing is required.
  *
  * @param env - Integration env bundle from `integrationEnv()`.
  * @param label - Short slug used to build a stable email so parallel test

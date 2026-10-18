@@ -5,9 +5,7 @@
 // return directly, so handlers stay readable and every failure mode carries
 // the correct HTTP status.
 //
-// Every write service (scoring, events, and future arrivals) needs the same
-// 4xx/5xx shapes; keeping them in _shared is cheaper than growing a copy per
-// service and gives us a single place to change the JSON envelope.
+// Local copy per ADR 0007: each service owns its own helpers.
 // -----------------------------------------------------------------------------
 
 import { jsonResponse } from "./Cors.ts";

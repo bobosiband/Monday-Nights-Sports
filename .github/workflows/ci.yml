@@ -1,18 +1,23 @@
 # -----------------------------------------------------------------------------
-# CI — Monday Night Sports
+# CI for Monday Night Sports.
 #
-# Runs on every push to main and every pull request. Four independent jobs so
-# a failure names the actual thing that broke:
+# Runs on every push to main and every pull request. Independent jobs so a
+# failure names the actual thing that broke:
 #
-#   static        deno fmt --check, deno lint, per-function deno check
-#   unit          deno test on supabase/functions/_tests/  (no DB, seconds)
-#   openapi-sync  regenerates api-docs/openapi.ts and fails if it drifts
-#   database      supabase start → db reset → integration tests against the
-#                 live local stack. Slower, but the only job that catches the
-#                 kind of grants/RLS bug called out in 0003_grants.sql.
+#   static           deno fmt check, deno lint, per-function deno check,
+#                    service-boundary and no-emojis guardrail (see
+#                    scripts/check-service-boundaries.sh).
+#   unit             deno task test over tests/ (no DB, seconds).
+#   openapi-sync     regenerates api-docs/openapi.ts and fails if it drifts.
+#   database         supabase start, db reset, integration tests against
+#                    the live local stack. Slower, but the only job that
+#                    catches the kind of grants/RLS bug called out in
+#                    0003_grants.sql.
+#   draw-generator   mvn verify for the Java Lambda starter under
+#                    services/draw-generator/.
 #
-# Ask the repo owner to require all four checks in the main-branch protection
-# rule; this workflow can't set that itself.
+# Ask the repo owner to require all five checks in the main-branch
+# protection rule; this workflow cannot set that itself.
 # -----------------------------------------------------------------------------
 
 name: CI
@@ -24,7 +29,7 @@ on:
 
 jobs:
   static:
-    name: Static checks (fmt + lint + type-check)
+    name: Static checks (fmt + lint + type-check + boundaries)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -37,6 +42,8 @@ jobs:
         run: deno lint
       - name: Type-check every function entrypoint
         run: deno task check
+      - name: Service boundaries + no-emojis guardrail
+        run: ./scripts/check-service-boundaries.sh
 
   unit:
     name: Unit tests
@@ -47,8 +54,9 @@ jobs:
         with:
           deno-version: v2.x
       - name: deno test
-        # Integration tests under _tests/integration/ skip themselves unless
-        # INTEGRATION=1 is set, so this run stays DB-free.
+        # Integration tests live under tests/integration/ and skip
+        # themselves unless INTEGRATION=1 is set, so this run stays
+        # DB-free.
         run: deno task test
 
   openapi-sync:
@@ -76,18 +84,19 @@ jobs:
         with:
           deno-version: v2.x
       - name: Boot the local stack
-        # Skip services we don't need for CI: web studio, image proxy, mail
-        # catcher, and the vector log pipeline. If exclusion names ever change
-        # in the CLI, drop the `-x` flag — a full `supabase start` is slower
-        # but always works.
+        # Skip services we do not need for CI: web studio, image proxy,
+        # mail catcher, and the vector log pipeline. If exclusion names
+        # ever change in the CLI, drop the `-x` flag; a full
+        # `supabase start` is slower but always works.
         run: supabase start -x studio,imgproxy,inbucket,vector
       - name: Apply migrations + seed
         run: supabase db reset
       - name: Export Supabase keys to the job env
-        # `supabase status -o env` prints ANON_KEY / SERVICE_ROLE_KEY / …;
-        # rename the two we need with --override-name so downstream steps can
-        # read them as SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY, strip
-        # the surrounding quotes, and append to $GITHUB_ENV.
+        # `supabase status -o env` prints ANON_KEY / SERVICE_ROLE_KEY /
+        # etc.; rename the two we need with --override-name so
+        # downstream steps read them as SUPABASE_ANON_KEY /
+        # SUPABASE_SERVICE_ROLE_KEY, strip the surrounding quotes, and
+        # append to $GITHUB_ENV.
         run: |
           supabase status \
             --override-name auth.anon_key=SUPABASE_ANON_KEY \
@@ -100,4 +109,18 @@ jobs:
         env:
           INTEGRATION: "1"
           SUPABASE_URL: http://127.0.0.1:54321
-        run: deno test --allow-net --allow-env supabase/functions/_tests/integration/
+        run: deno task test:integration
+
+  draw-generator:
+    name: Draw generator (Java 21 + Maven)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: mvn verify
+        working-directory: services/draw-generator
+        run: mvn -B verify

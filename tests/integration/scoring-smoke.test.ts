@@ -1,5 +1,5 @@
 // -----------------------------------------------------------------------------
-// _tests/integration/scoring-smoke.test.ts
+// tests/integration/scoring-smoke.test.ts
 //
 // End-to-end walkthrough of the scoring + viewing arc against a live local
 // Supabase stack. Mirrors scripts/smoke-live.sh so the CI job proves the
