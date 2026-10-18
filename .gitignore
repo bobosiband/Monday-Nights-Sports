@@ -13,6 +13,13 @@ coverage/
 # --- Deno ---
 .deno/
 
+# --- Java (Maven) ---
+# The draw-generator service uses Maven; keep this global so a future
+# Java service does not have to repeat it.
+target/
+*.class
+.mvn/
+
 # --- Supabase local dev ---
 supabase/.temp/
 supabase/.branches/
