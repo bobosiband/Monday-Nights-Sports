@@ -1,0 +1,79 @@
+# ----------------------------------------------------------------------------
+# AWS SAM template for the Monday Night Sports draw-generator Lambda starter.
+#
+# NOT DEPLOYED. This file documents the shape of the deployment that an
+# operator could run manually once the AWS account, budgets alert and
+# credentials are set up (see README.md for the manual checklist). The
+# repository's deploy script (scripts/deploy.sh) does NOT touch AWS: live
+# scoring stays on Supabase.
+#
+# Cost guards baked in below:
+#   - Runtime java21, SnapStart on published versions (sub-second cold start,
+#     no scale-out cost per cold start).
+#   - MemorySize 512 MB (lowest tier that keeps the JIT happy).
+#   - Timeout 10 seconds (far above the real p99; a wedged request is still
+#     bounded).
+#   - ReservedConcurrentExecutions 2 so a loop or a traffic burst cannot
+#     scale into a bill shock.
+#   - If an HTTP API is wired up later, throttle it (burst 5, rate 2/sec).
+#     No public function URL is declared here.
+# ----------------------------------------------------------------------------
+
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Monday Night Sports draw-generator (starter; not deployed by CI).
+
+Globals:
+  Function:
+    Runtime: java21
+    MemorySize: 512
+    Timeout: 10
+    Architectures:
+      - arm64
+
+Resources:
+  DrawGeneratorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: monday-nights-draw-generator
+      Handler: com.mondaynightsports.drawgenerator.DrawGeneratorHandler::handleRequest
+      CodeUri: ./
+      # Keep the live function behind a published version so SnapStart can
+      # apply. The alias is where routing / weighted deployments would hang.
+      AutoPublishAlias: live
+      SnapStart:
+        ApplyOn: PublishedVersions
+      ReservedConcurrentExecutions: 2
+      # Deliberately NO FunctionUrlConfig. Expose through an HTTP API with
+      # a throttle below if you need a URL; a bare function URL has no
+      # per-caller rate limit and is a cost footgun.
+
+  # Optional HTTP API with a conservative throttle. Omit the stage below
+  # entirely if you want purely private invocation (e.g. invoked by another
+  # Lambda or by API Gateway in a different stack).
+  DrawGeneratorHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: live
+      DefaultRouteSettings:
+        ThrottlingBurstLimit: 5
+        ThrottlingRateLimit: 2
+
+  # Route POST /generate on the HTTP API to the function. Keep as its own
+  # resource so an operator can comment it out without re-plumbing the
+  # function itself.
+  DrawGeneratorHttpApiPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref DrawGeneratorFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${DrawGeneratorHttpApi}/*/*/generate
+
+Outputs:
+  FunctionName:
+    Description: Lambda function name.
+    Value: !Ref DrawGeneratorFunction
+  HttpApiEndpoint:
+    Description: Base URL of the HTTP API (throttled).
+    Value: !Sub https://${DrawGeneratorHttpApi}.execute-api.${AWS::Region}.amazonaws.com/live

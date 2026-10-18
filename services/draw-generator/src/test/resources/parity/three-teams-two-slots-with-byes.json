@@ -1,0 +1,52 @@
+{
+  "name": "three-teams-two-slots-with-byes",
+  "input": {
+    "teamIds": [
+      "A",
+      "B",
+      "C"
+    ],
+    "slotIds": [
+      "S1",
+      "S2"
+    ]
+  },
+  "expected": [
+    {
+      "round": 1,
+      "slotId": "S1",
+      "homeTeamId": "A",
+      "awayTeamId": null
+    },
+    {
+      "round": 1,
+      "slotId": "S1",
+      "homeTeamId": "B",
+      "awayTeamId": "C"
+    },
+    {
+      "round": 2,
+      "slotId": "S2",
+      "homeTeamId": "A",
+      "awayTeamId": "C"
+    },
+    {
+      "round": 2,
+      "slotId": "S2",
+      "homeTeamId": "B",
+      "awayTeamId": null
+    },
+    {
+      "round": 3,
+      "slotId": "S1",
+      "homeTeamId": "A",
+      "awayTeamId": "B"
+    },
+    {
+      "round": 3,
+      "slotId": "S1",
+      "homeTeamId": "C",
+      "awayTeamId": null
+    }
+  ]
+}

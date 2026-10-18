@@ -1,7 +1,7 @@
 {
   "tasks": {
-    "test": "deno test --allow-net --allow-env --ignore=tests/integration/ tests/",
-    "test:integration": "INTEGRATION=1 deno test --allow-net --allow-env tests/integration/",
+    "test": "deno test --allow-net --allow-env --allow-read --ignore=tests/integration/ tests/",
+    "test:integration": "INTEGRATION=1 deno test --allow-net --allow-env --allow-read tests/integration/",
     "check": "bash -c 'for f in supabase/functions/*/index.ts; do echo \"checking $f\"; deno check \"$f\" || exit 1; done'",
     "fmt": "deno fmt",
     "lint": "deno lint"

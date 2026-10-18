@@ -1,0 +1,110 @@
+{
+  "name": "six-teams-three-slots-wrap",
+  "input": {
+    "teamIds": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F"
+    ],
+    "slotIds": [
+      "S1",
+      "S2",
+      "S3"
+    ]
+  },
+  "expected": [
+    {
+      "round": 1,
+      "slotId": "S1",
+      "homeTeamId": "A",
+      "awayTeamId": "F"
+    },
+    {
+      "round": 1,
+      "slotId": "S1",
+      "homeTeamId": "B",
+      "awayTeamId": "E"
+    },
+    {
+      "round": 1,
+      "slotId": "S1",
+      "homeTeamId": "C",
+      "awayTeamId": "D"
+    },
+    {
+      "round": 2,
+      "slotId": "S2",
+      "homeTeamId": "A",
+      "awayTeamId": "E"
+    },
+    {
+      "round": 2,
+      "slotId": "S2",
+      "homeTeamId": "F",
+      "awayTeamId": "D"
+    },
+    {
+      "round": 2,
+      "slotId": "S2",
+      "homeTeamId": "B",
+      "awayTeamId": "C"
+    },
+    {
+      "round": 3,
+      "slotId": "S3",
+      "homeTeamId": "A",
+      "awayTeamId": "D"
+    },
+    {
+      "round": 3,
+      "slotId": "S3",
+      "homeTeamId": "E",
+      "awayTeamId": "C"
+    },
+    {
+      "round": 3,
+      "slotId": "S3",
+      "homeTeamId": "F",
+      "awayTeamId": "B"
+    },
+    {
+      "round": 4,
+      "slotId": "S1",
+      "homeTeamId": "A",
+      "awayTeamId": "C"
+    },
+    {
+      "round": 4,
+      "slotId": "S1",
+      "homeTeamId": "D",
+      "awayTeamId": "B"
+    },
+    {
+      "round": 4,
+      "slotId": "S1",
+      "homeTeamId": "E",
+      "awayTeamId": "F"
+    },
+    {
+      "round": 5,
+      "slotId": "S2",
+      "homeTeamId": "A",
+      "awayTeamId": "B"
+    },
+    {
+      "round": 5,
+      "slotId": "S2",
+      "homeTeamId": "C",
+      "awayTeamId": "F"
+    },
+    {
+      "round": 5,
+      "slotId": "S2",
+      "homeTeamId": "D",
+      "awayTeamId": "E"
+    }
+  ]
+}
