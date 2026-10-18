@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Maven project for the Monday Night Sports draw-generator Lambda starter.
+
+  Not deployed by any script in this repo (see services/draw-generator/README.md
+  and ADR 0007). The pipeline here is:
+
+    mvn verify   -> spotless-check + compile + unit tests
+    sam build    -> package for local invoke (optional)
+    sam local invoke  -> run against a stubbed event (optional)
+
+  Java 21 with SnapStart in mind (SnapStart is declared in template.yaml,
+  not here). The parity tests under src/test/resources/parity/ are read
+  by both this suite and the Deno tests/events/DrawParity.test.ts; both
+  implementations assert against the same JSON fixtures so neither side
+  can drift silently.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.mondaynightsports</groupId>
+  <artifactId>draw-generator</artifactId>
+  <version>0.1.0-SNAPSHOT</version>
+  <packaging>jar</packaging>
+
+  <name>draw-generator</name>
+  <description>
+    AWS Lambda starter: Java 21 implementation of the Monday Night Sports
+    round-robin draw generator. Stateless, no database access, no network.
+  </description>
+
+  <properties>
+    <maven.compiler.source>21</maven.compiler.source>
+    <maven.compiler.target>21</maven.compiler.target>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <aws.lambda.core.version>1.4.0</aws.lambda.core.version>
+    <aws.lambda.events.version>3.16.1</aws.lambda.events.version>
+    <jackson.version>2.21.7</jackson.version>
+    <junit.jupiter.version>5.14.4</junit.jupiter.version>
+
+    <spotless.version>3.10.4</spotless.version>
+    <google.java.format.version>1.37.0</google.java.format.version>
+
+    <maven.compiler.plugin.version>3.13.0</maven.compiler.plugin.version>
+    <maven.surefire.plugin.version>3.5.3</maven.surefire.plugin.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-lambda-java-core</artifactId>
+      <version>${aws.lambda.core.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.amazonaws</groupId>
+      <artifactId>aws-lambda-java-events</artifactId>
+      <version>${aws.lambda.events.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-api</artifactId>
+      <version>${junit.jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-engine</artifactId>
+      <version>${junit.jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter-params</artifactId>
+      <version>${junit.jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven.compiler.plugin.version}</version>
+        <configuration>
+          <release>21</release>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven.surefire.plugin.version}</version>
+      </plugin>
+
+      <!-- Spotless enforces Google Java Style on `mvn verify`. Running
+           `mvn spotless:apply` reformats sources in place. -->
+      <plugin>
+        <groupId>com.diffplug.spotless</groupId>
+        <artifactId>spotless-maven-plugin</artifactId>
+        <version>${spotless.version}</version>
+        <configuration>
+          <java>
+            <googleJavaFormat>
+              <version>${google.java.format.version}</version>
+              <style>
+              GOOGLE
+              </style>
+              <reflowLongStrings>true</reflowLongStrings>
+            </googleJavaFormat>
+            <removeUnusedImports />
+            <trimTrailingWhitespace />
+            <endWithNewline />
+          </java>
+          <pom>
+            <sortPom />
+          </pom>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>verify</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
