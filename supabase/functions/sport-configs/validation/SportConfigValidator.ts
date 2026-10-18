@@ -1,46 +1,42 @@
 // -----------------------------------------------------------------------------
-// sport-configs/validate-config.ts
+// sport-configs/validation/SportConfigValidator.ts
 //
 // Deep validation of the `config` JSONB blob before it enters the DB. Split
-// out of index.ts so tests can import it without booting the HTTP server.
+// out of the router so tests can import it without booting the HTTP server.
 //
-// Strictness rationale: an accepted-but-wrong config corrupts BOTH the
-// scoring screen (via `_shared/score.ts` + `scoring/validate-event.ts`) AND
-// the standings table (via `_shared/standings.ts`). It's cheaper to reject
-// on the write path than to debug a wrong-looking leaderboard later.
+// Strictness rationale: an accepted-but-wrong config corrupts both the
+// scoring screen (via scoring/domain/ScoreCalculator) and the standings
+// table (via standings/domain/StandingsCalculator). It is cheaper to
+// reject on the write path than to debug a wrong-looking leaderboard
+// later.
 //
-// Permissive where absent is fine: `deriveScore` and `computeStandings`
-// both tolerate an empty config, so we only fail writes whose values are
-// *actively wrong* (wrong type, negative counts, non-integer periods,
-// etc.).
+// Permissive where absent is fine: the downstream calculators both
+// tolerate an empty config, so we only fail writes whose values are
+// actively wrong (wrong type, negative counts, non-integer periods).
 // -----------------------------------------------------------------------------
 
 /**
- * Validation result shape used by every validator: `{ ok: true, value }`
- * or `{ ok: false, error }`. Matches the convention in
- * `_shared/validate.ts` and `scoring/validate-event.ts` so callers can
- * pattern-match uniformly.
+ * Validation result shape used throughout: `{ ok: true, value }` or
+ * `{ ok: false, error }`.
  */
-export type Validated<T> = { ok: true; value: T } | {
-  ok: false;
-  error: string;
-};
+export type Validated<T> =
+  | { ok: true; value: T }
+  | { ok: false; error: string };
 
 /**
  * Validate the `config` JSONB from a `sport-configs` request body.
  *
  * Rules:
  *   - Top-level must be a JSON object.
- *   - `periods.count`       — positive integer (required inside `periods`).
- *   - `periods.minutes`     — positive integer (when present).
- *   - `periods.direction`   — must be 'up' or 'down' (when present).
- *   - `score_increments`    — non-empty array of positive integers.
- *   - `track_fouls`         — boolean (when present).
- *   - `standings.points`    — object with `win`, `draw`, `loss` each a
- *                             non-negative integer.
- *   - `standings.tiebreakers` — array of strings; unknown names are
- *                             tolerated by `computeStandings`, so we only
- *                             gate the shape, not the spelling.
+ *   - `periods.count` is a positive integer (required inside `periods`).
+ *   - `periods.minutes` is a positive integer when present.
+ *   - `periods.direction` is `"up"` or `"down"` when present.
+ *   - `score_increments` is a non-empty array of positive integers.
+ *   - `track_fouls` is a boolean when present.
+ *   - `standings.points` is an object with `win`, `draw`, `loss` each a
+ *     non-negative integer.
+ *   - `standings.tiebreakers` is an array of strings; unknown names are
+ *     tolerated by the standings calculator, so we only gate the shape.
  *
  * @param raw - The `config` value from the request body.
  * @returns The accepted config (typed loosely as an object) or an error
@@ -70,7 +66,10 @@ export function validateConfig(
       "minutes" in pp &&
       (!Number.isInteger(pp.minutes) || (pp.minutes as number) <= 0)
     ) {
-      return { ok: false, error: "periods.minutes must be a positive integer" };
+      return {
+        ok: false,
+        error: "periods.minutes must be a positive integer",
+      };
     }
     if (
       "direction" in pp && pp.direction !== "up" && pp.direction !== "down"

@@ -1,12 +1,10 @@
 // -----------------------------------------------------------------------------
-// _tests/sport-configs/validate-config.test.ts
+// tests/sport-configs/SportConfigValidator.test.ts
 //
-// Pure-logic tests for `validateConfig`. Locks in the tradeoff the module
+// Pure-logic tests for `validateConfig`. Locks in the trade-off the module
 // documents: strict on wrong values (bad shape corrupts scoring AND
-// standings later), permissive on absence (missing keys fall back to
-// deriveScore / computeStandings defaults).
-//
-// Run with: `deno test --allow-net supabase/functions/_tests/`
+// standings later), permissive on absence (missing keys fall back to the
+// downstream calculators' defaults).
 // -----------------------------------------------------------------------------
 
 import {
@@ -14,12 +12,12 @@ import {
   assertEquals,
   assertStrictEquals,
 } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { validateConfig } from "../../sport-configs/validate-config.ts";
+import { validateConfig } from "../../supabase/functions/sport-configs/validation/SportConfigValidator.ts";
 
 /**
- * Convenience: run the validator and assert on the failure message. Fails
- * loudly if the input was unexpectedly accepted so a regression can't slip
- * a bad shape through with a confusing "assert on undefined".
+ * Run the validator and assert on the failure message. Fails loudly if the
+ * input was unexpectedly accepted so a regression cannot slip a bad shape
+ * through with a confusing "assert on undefined".
  *
  * @param raw - The input to reject.
  * @param expected - Substring that must appear in the error message.
@@ -41,13 +39,13 @@ function assertRejects(raw: unknown, expected: string): void {
 
 // ---------- top-level shape ------------------------------------------------
 
-Deno.test("empty object is accepted — every field defaulting to deriveScore/computeStandings is fine", () => {
+Deno.test("empty object is accepted: every field defaulting to the downstream calculators is fine", () => {
   const result = validateConfig({});
   assertEquals(result.ok, true);
   if (result.ok) assertEquals(result.value, {});
 });
 
-Deno.test("null / undefined / non-objects / arrays are rejected as top-level shape errors", () => {
+Deno.test("null, undefined, non-objects and arrays are rejected as top-level shape errors", () => {
   for (const bad of [null, undefined, 0, "hello", true, [1, 2, 3]]) {
     assertRejects(bad, "config must be a JSON object");
   }
@@ -82,7 +80,6 @@ Deno.test("periods.count must be a positive integer", () => {
 });
 
 Deno.test("periods.minutes optional; when present must be a positive integer", () => {
-  // Absent minutes: still valid.
   assertEquals(validateConfig({ periods: { count: 2 } }).ok, true);
   assertRejects(
     { periods: { count: 2, minutes: 0 } },
@@ -150,8 +147,8 @@ Deno.test("score_increments entries must all be positive integers", () => {
 });
 
 Deno.test("score_increments accepts realistic sport configs", () => {
-  assertEquals(validateConfig({ score_increments: [1] }).ok, true); // soccer
-  assertEquals(validateConfig({ score_increments: [1, 2, 3] }).ok, true); // basketball
+  assertEquals(validateConfig({ score_increments: [1] }).ok, true);
+  assertEquals(validateConfig({ score_increments: [1, 2, 3] }).ok, true);
 });
 
 // ---------- track_fouls ---------------------------------------------------
@@ -189,7 +186,6 @@ Deno.test("standings.points requires win, draw, loss non-negative integers", () 
     { standings: { points: { win: 2.5, draw: 1, loss: 0 } } },
     "standings.points.win must be a non-negative integer",
   );
-  // Zero is accepted — some sports use loss=0 explicitly.
   assertEquals(
     validateConfig({
       standings: { points: { win: 3, draw: 1, loss: 0 } },
@@ -199,9 +195,6 @@ Deno.test("standings.points requires win, draw, loss non-negative integers", () 
 });
 
 Deno.test("standings.tiebreakers must be an array of strings; content not gated", () => {
-  // Well-formed strings: accepted, even if the string is nonsense — the
-  // consumer (computeStandings) tolerates unknown tiebreaker names by
-  // skipping them.
   assertEquals(
     validateConfig({
       standings: { tiebreakers: ["points", "goal_diff", "goals_for"] },
@@ -255,7 +248,7 @@ Deno.test("basketball config accepted end-to-end", () => {
   assertEquals(result.ok, true);
 });
 
-Deno.test("first failing field short-circuits — the error names it, not a later field", () => {
+Deno.test("first failing field short-circuits; the error names it, not a later field", () => {
   // A config where BOTH periods.count is bad AND standings.tiebreakers is
   // bad: the caller should see the periods.count error, since it comes
   // first in the walk. This guards against a refactor accidentally
