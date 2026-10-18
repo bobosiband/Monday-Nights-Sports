@@ -1,0 +1,55 @@
+{
+  "name": "four-teams-four-slots",
+  "input": {
+    "teamIds": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "slotIds": [
+      "S1",
+      "S2",
+      "S3",
+      "S4"
+    ]
+  },
+  "expected": [
+    {
+      "round": 1,
+      "slotId": "S1",
+      "homeTeamId": "A",
+      "awayTeamId": "D"
+    },
+    {
+      "round": 1,
+      "slotId": "S1",
+      "homeTeamId": "B",
+      "awayTeamId": "C"
+    },
+    {
+      "round": 2,
+      "slotId": "S2",
+      "homeTeamId": "A",
+      "awayTeamId": "C"
+    },
+    {
+      "round": 2,
+      "slotId": "S2",
+      "homeTeamId": "D",
+      "awayTeamId": "B"
+    },
+    {
+      "round": 3,
+      "slotId": "S3",
+      "homeTeamId": "A",
+      "awayTeamId": "B"
+    },
+    {
+      "round": 3,
+      "slotId": "S3",
+      "homeTeamId": "C",
+      "awayTeamId": "D"
+    }
+  ]
+}

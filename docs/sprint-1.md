@@ -1,5 +1,9 @@
 # Sprint 1 — Backend Foundation
 
+> File paths in this document reflect the service layout at the time of
+> Sprint 1. The current layout is set by
+> [ADR 0007](decisions/0007-service-ownership-and-layout.md).
+
 Running log of what shipped in Sprint 1 and how to exercise each service. Every
 section maps to one commit.
 

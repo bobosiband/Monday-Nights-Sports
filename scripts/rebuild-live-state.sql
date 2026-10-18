@@ -49,7 +49,7 @@ with derived as (
        then e.value else 0 end), 0) as away_score,
     -- Fouls as a JSONB object { team_id: count }. Only for fouls where the
     -- team is one of the fixture's teams; others are ignored, matching
-    -- _shared/score.ts.
+    -- scoring/domain/ScoreCalculator.ts.
     coalesce(
       jsonb_object_agg(e.team_id::text, foul_count)
         filter (where foul_count is not null),

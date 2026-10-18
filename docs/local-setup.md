@@ -192,39 +192,43 @@ WSL2, Linux). Windows equivalents follow.
 
 ## Running the unit tests
 
-Pure-logic tests — no DB required. Same command on every platform:
+Pure-logic tests, no DB required. Same command on every platform:
 
 ```bash
-deno task test   # or: deno test --allow-net --allow-env supabase/functions/_tests/
+deno task test   # or: deno test --allow-net --allow-env tests/
 ```
 
 You should see roughly:
 
 ```
-ok | ~100 passed | 0 failed
+ok | ~200 passed | 0 failed
 ```
 
-Coverage (Sprints 1 → C/D/E):
+Coverage (grouped by service owner, see ADR 0007):
 
-- `_tests/shared/score.test.ts` — the `deriveScore` fold.
-- `_tests/shared/score-mixed.test.ts` — scores + fouls + cards together.
-- `_tests/shared/match-token.test.ts` — code generator, normalisation, SHA-256
-  hasher, bearer extractor.
-- `_tests/shared/standings.test.ts` — points / tiebreakers / byes / config
-  permutations.
-- `_tests/scoring/validate-event.test.ts` — request-body validation.
-- `_tests/scoring/period-state.test.ts` — `periodIsOpen` helper.
-- `_tests/scoring/period-breakdown.test.ts` — finalize's period fold.
-- `_tests/scoring/guard.test.ts` — verifyMatchToken: expired / revoked /
-  wrong-fixture / happy path.
-- `_tests/fixtures-public/render.test.ts` — LIVE badge and score rendering.
-- `_tests/sport-configs/validate-config.test.ts` — strict shape validation for
-  the sport-configs body.
-- `_tests/shared/round-robin.test.ts` — pure round-robin generator (all-pairs,
-  bye distribution, determinism).
+- `tests/scoring/ScoreCalculator.test.ts`, `ScoreCalculatorMixed.test.ts`: the
+  pure score fold.
+- `tests/scoring/MatchTokenHasher.test.ts`,
+  `tests/match-access/MatchTokenHasher.test.ts`: both sides of the
+  normalise-and-hash contract (same pinned DEVCODE1 digest).
+- `tests/standings/PointsTableRules.test.ts`: points, tiebreakers, byes and
+  config permutations.
+- `tests/scoring/EventBodyValidator.test.ts`: scoring request-body validation.
+- `tests/scoring/PeriodState.test.ts`: `periodIsOpen` helper.
+- `tests/scoring/PeriodBreakdown.test.ts`: finalize's period fold.
+- `tests/scoring/MatchTokenGuard.test.ts`: verifyMatchToken (expired, revoked,
+  wrong-fixture, happy path).
+- `tests/fixtures-public/FixturesRenderer.test.ts`: LIVE badge and score
+  rendering.
+- `tests/sport-configs/SportConfigValidator.test.ts`: strict shape validation
+  for the sport-configs body.
+- `tests/events/RoundRobinGenerator.test.ts`, `SlotSpread.test.ts`,
+  `EventBodyValidator.test.ts`, `DrawBodyValidator.test.ts`: the draw generator,
+  spread, and publish/unpublish gates.
+- `tests/api-docs/ApiDocsRouter.test.ts`: redirect + spec routes.
 
 ```bash
-deno task test   # or: deno test --allow-net --allow-env supabase/functions/_tests/
+deno task test   # or: deno test --allow-net --allow-env tests/
 ```
 
 Type-check the whole service (no execution):
@@ -241,15 +245,16 @@ Every push to `main` and every pull request runs
 [`.github/workflows/ci.yml`](../.github/workflows/ci.yml). Four jobs, chosen so
 a failing build names the actual thing that broke:
 
-| Job            | What it runs                                                                                                | Why it exists                                                                                                                                             |
-| -------------- | ----------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `static`       | `deno fmt --check`, `deno lint`, `deno check` on every function entrypoint                                  | Cheap, catches style + type drift in seconds.                                                                                                             |
-| `unit`         | `deno task test`                                                                                            | The 140+ unit tests. Skips the integration folder because `INTEGRATION` isn't set.                                                                        |
-| `openapi-sync` | Re-runs `scripts/sync-openapi.sh` and fails if `supabase/functions/api-docs/openapi.ts` moved               | Guarantees the served Swagger UI matches `docs/openapi.yaml`.                                                                                             |
-| `database`     | `supabase start` → `supabase db reset` → integration tests under `_tests/integration/` with `INTEGRATION=1` | Only job that boots real Postgres, so the only job that would have caught the `permission denied for table fixtures` bug called out in `0003_grants.sql`. |
+| Job              | What it runs                                                                                                           | Why it exists                                                                                                                                             |
+| ---------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `static`         | `deno fmt --check`, `deno lint`, `deno check` on every function entrypoint, plus `scripts/check-service-boundaries.sh` | Cheap, catches style, type and cross-service-import drift in seconds.                                                                                     |
+| `unit`           | `deno task test`                                                                                                       | The 200+ unit tests. Skips the integration folder because `INTEGRATION` is not set.                                                                       |
+| `openapi-sync`   | Re-runs `scripts/sync-openapi.sh` and fails if `supabase/functions/api-docs/openapi.ts` moved                          | Guarantees the served Swagger UI matches `docs/openapi.yaml`.                                                                                             |
+| `database`       | `supabase start`, `supabase db reset`, `deno task test:integration` with `INTEGRATION=1`                               | Only job that boots real Postgres, so the only job that would have caught the `permission denied for table fixtures` bug called out in `0003_grants.sql`. |
+| `draw-generator` | `mvn verify` in `services/draw-generator/`                                                                             | Builds and tests the Java Lambda starter (not deployed; see ADR 0007).                                                                                    |
 
-Branch protection on `main` should require all four checks — this has to be
-enabled in the GitHub UI by a repo admin; the workflow can't set it itself.
+Branch protection on `main` should require all five checks; this has to be
+enabled in the GitHub UI by a repo admin, the workflow cannot set it itself.
 
 ### Running the integration tests locally
 
@@ -415,7 +420,7 @@ supabase stop         # shut it down (containers stopped, data preserved)
 supabase stop --backup=false   # ... and drop the DB volume too
 supabase status       # print URLs + keys of the running stack
 supabase db reset     # drop DB, reapply all migrations + seed
-deno task test   # or: deno test --allow-net --allow-env supabase/functions/_tests/
+deno task test   # or: deno test --allow-net --allow-env tests/
 ```
 
 ---

@@ -47,6 +47,7 @@ FUNCTIONS=(
   live
   results-public
   api-docs
+  events
 )
 
 DEPLOY_FLAGS=(--use-api)

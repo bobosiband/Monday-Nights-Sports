@@ -101,7 +101,7 @@ on conflict (id) do nothing;
 --             the byte stream, and the helper normalises to upper before
 --             hashing). The value below is `echo -n 'DEVCODE1' | sha256sum`.
 --
--- ⚠️  This seed inserts a code that never expires until 2099. NEVER copy
+--   This seed inserts a code that never expires until 2099. NEVER copy
 --     this into a production database. Rotate/remove before deploying.
 insert into public.match_access (
   id, fixture_id, code_hash, label, expires_at, revoked_at, last_used_at

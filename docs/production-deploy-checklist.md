@@ -23,9 +23,10 @@ grep -RIn "SCORING_DEV_TOKENS\|dev.token\|dev pass\|bypass" \
   supabase/functions/scoring/
 ```
 
-Also spot-check `supabase/functions/scoring/guard.ts`: `verifyMatchToken` must
-be the sole entry, `lookup` must default to `defaultLookup`, and `defaultLookup`
-must hit `match_access` — no in-memory table, no env allowlist.
+Also spot-check `supabase/functions/scoring/security/MatchTokenGuard.ts`:
+`verifyMatchToken` must be the sole entry, `lookup` must default to
+`defaultLookup`, and `defaultLookup` must hit `match_access`; no in-memory
+table, no env allowlist.
 
 The seeded `DEVCODE1` in `supabase/seed.sql` is a **local-dev convenience
 only**. It is inserted by `supabase db reset` (which runs against a container,

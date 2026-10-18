@@ -1,0 +1,20 @@
+{
+  "name": "two-teams-one-slot",
+  "input": {
+    "teamIds": [
+      "A",
+      "B"
+    ],
+    "slotIds": [
+      "S1"
+    ]
+  },
+  "expected": [
+    {
+      "round": 1,
+      "slotId": "S1",
+      "homeTeamId": "A",
+      "awayTeamId": "B"
+    }
+  ]
+}
